@@ -104,16 +104,64 @@ export const useML = () => {
     const suggestionCache = useRef(new Map());
     const intentHistory = useRef([]); // Track recent intents for context
 
+    // Add a fast lookup for common conversation starters to provide instant responses
+    const fastLookupMap = useRef(new Map([
+        // Common greetings
+        ['hello', { intent: 'social', suggestion: 'Hi there! How are you doing today?' }],
+        ['hi', { intent: 'social', suggestion: 'Hello! Nice to meet you.' }],
+        ['hey', { intent: 'social', suggestion: 'Hey! What\'s up?' }],
+        ['how are you', { intent: 'social', suggestion: 'I\'m doing well, thank you! How about yourself?' }],
+        ['how\'s it going', { intent: 'social', suggestion: 'Pretty good! How about with you?' }],
+
+        // Common questions
+        ['what\'s up', { intent: 'social', suggestion: 'Not much, just taking it easy. How about you?' }],
+        ['what are you up to', { intent: 'social', suggestion: 'Just relaxing. What about you?' }],
+        ['how was your weekend', { intent: 'social', suggestion: 'It was relaxing, thanks! How about yours?' }],
+
+        // Professional starters
+        ['how is the project going', { intent: 'professional', suggestion: 'Making good progress. Any specific concerns?' }],
+        ['what are the next steps', { intent: 'professional', suggestion: 'The priority is finalizing the proposal by Friday.' }],
+
+        // Empathetic responses
+        ['i had a rough day', { intent: 'empathy', suggestion: 'I\'m sorry to hear that. What happened?' }],
+        ['i\'m feeling overwhelmed', { intent: 'empathy', suggestion: 'That sounds really challenging. How can I support you?' }],
+
+        // Conflict de-escalation
+        ['i don\'t agree', { intent: 'conflict', suggestion: 'I see where you\'re coming from. Can we find common ground?' }],
+        ['that won\'t work', { intent: 'conflict', suggestion: 'I understand your concern. What would work better for you?' }]
+    ]));
+
     const processText = useCallback((text) => {
-        const intent = detectIntent(text);
-        const needsSuggestion = shouldGenerateSuggestion(text);
+        // First, check for fast lookup responses for common phrases
+        const normalizedText = text.toLowerCase().trim();
+        const fastLookupResult = fastLookupMap.current.get(normalizedText);
 
-        setDetectedIntent(intent);
+        let intent, needsSuggestion;
+        if (fastLookupResult) {
+            // Use the fast lookup result
+            intent = fastLookupResult.intent;
+            needsSuggestion = true;
+            setSuggestion(fastLookupResult.suggestion);
+            setIsProcessing(false);
+        } else {
+            // Fall back to normal processing
+            intent = detectIntent(text);
+            needsSuggestion = shouldGenerateSuggestion(text);
 
-        // Update intent history for context
-        intentHistory.current.push({ intent, timestamp: Date.now() });
-        if (intentHistory.current.length > 5) {
-            intentHistory.current.shift(); // Keep only last 5 intents
+            setDetectedIntent(intent);
+
+            // Update intent history for context
+            intentHistory.current.push({ intent, timestamp: Date.now() });
+            if (intentHistory.current.length > 5) {
+                intentHistory.current.shift(); // Keep only last 5 intents
+            }
+
+            // Check for precomputed suggestions first (fastest response)
+            const precomputed = getPrecomputedSuggestion(text);
+            if (precomputed) {
+                setSuggestion(precomputed.suggestion);
+                setIsProcessing(false);
+            }
         }
 
         const currentBattery = deduct(text, intent, persona);
@@ -133,14 +181,6 @@ export const useML = () => {
         if (!shouldShowSuggestion || currentSpeaker === 'me') {
             setIsProcessing(false);
             setSuggestion('');
-            return;
-        }
-
-        // Check for precomputed suggestions first (fastest response)
-        const precomputed = getPrecomputedSuggestion(text);
-        if (precomputed) {
-            setSuggestion(precomputed.suggestion);
-            setIsProcessing(false);
             return;
         }
 

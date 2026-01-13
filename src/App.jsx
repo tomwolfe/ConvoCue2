@@ -256,9 +256,23 @@ const App = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Enhanced loading status with estimated time */}
                         <div className="loading-status-text">
                             <span>{status}</span>
                         </div>
+
+                        {/* Loading progress bar with overall progress */}
+                        <div className="overall-progress">
+                            <div className="progress-labels">
+                                <span>Overall Progress</span>
+                                <span>{Math.round(progress)}%</span>
+                            </div>
+                            <div className="progress-bar">
+                                <div className="progress-fill" style={{ width: `${progress}%`, backgroundColor: '#6366f1' }}></div>
+                            </div>
+                        </div>
+
                         <div className="loading-tips">
                             <p>💡 Tip: The first load may take 1-2 minutes as models download. Future sessions will be faster!</p>
                             <p>While you wait, here's how ConvoCue helps: <strong>It listens to your conversation and suggests the right thing to say next, helping you navigate social situations with confidence.</strong></p>
@@ -273,11 +287,11 @@ const App = () => {
                                     </div>
                                     <div className="conversation-line">
                                         <span className="speaker">You:</span>
-                                        <span className="text">"It was great, thanks! How about yours?"</span>
+                                        <span class="text">"It was great, thanks! How about yours?"</span>
                                     </div>
                                     <div className="conversation-line">
                                         <span className="speaker">Suggestion:</span>
-                                        <span className="text">"Ask about their weekend"</span>
+                                        <span class="text">"Ask about their weekend"</span>
                                     </div>
                                 </div>
                                 <p>ConvoCue analyzes your conversation and suggests the right response at the right time!</p>
@@ -291,6 +305,11 @@ const App = () => {
                                         <li>Initializing audio processing engine</li>
                                         <li>Setting up privacy-first processing</li>
                                     </ul>
+                                </div>
+
+                                {/* Estimated time remaining */}
+                                <div className="loading-estimation">
+                                    <p><strong>Estimated time remaining:</strong> {Math.max(1, Math.round((100 - progress) * 0.8))} seconds</p>
                                 </div>
                             </div>
                         </div>

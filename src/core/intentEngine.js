@@ -16,6 +16,16 @@ const COMPILED_PATTERNS = Object.entries(INTENT_PATTERNS).map(([intent, config])
     };
 });
 
+// Cache for recent intent detections to avoid repeated processing of similar inputs
+const INTENT_CACHE = new Map();
+const MAX_CACHE_SIZE = 50;
+
+// Function to generate a cache key based on text content
+const getCacheKey = (text) => {
+    // Normalize text for consistent caching
+    return text.toLowerCase().trim().substring(0, 50);
+};
+
 // Enhanced nuance patterns with more context awareness
 const NUANCE_PATTERNS = [
     { regex: /\b(sorry but|sorry, but|i hear you but|no offense but|actually|wrong|disagree)\b/gi, conflict: 2.5, empathy: -1 },
@@ -36,6 +46,13 @@ const NUANCE_PATTERNS = [
 
 export const detectIntent = (text) => {
     if (!text || text.trim().length < 3) return 'general';
+
+    // Check cache first for frequently detected intents
+    const cacheKey = getCacheKey(text);
+    const cachedResult = INTENT_CACHE.get(cacheKey);
+    if (cachedResult && Date.now() - cachedResult.timestamp < 30000) { // 30 second cache
+        return cachedResult.intent;
+    }
 
     const textLower = text.toLowerCase();
 
@@ -166,6 +183,17 @@ export const detectIntent = (text) => {
             bestIntent = intent;
         }
     }
+
+    // Store result in cache
+    if (INTENT_CACHE.size >= MAX_CACHE_SIZE) {
+        // Remove oldest entry if cache is full
+        const firstKey = INTENT_CACHE.keys().next().value;
+        INTENT_CACHE.delete(firstKey);
+    }
+    INTENT_CACHE.set(cacheKey, {
+        intent: bestIntent,
+        timestamp: Date.now()
+    });
 
     return bestIntent;
 };

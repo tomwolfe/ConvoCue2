@@ -9,6 +9,7 @@ const VAD = ({ onSpeechEnd, isReady, status, progressiveReadiness }) => {
     const [retryCount, setRetryCount] = React.useState(0);
     const [isRequestingPermission, setIsRequestingPermission] = React.useState(false);
     const [showPrivacyNotice, setShowPrivacyNotice] = React.useState(false);
+    const [showTroubleshootingGuide, setShowTroubleshootingGuide] = React.useState(false);
 
     const vad = useMicVAD({
         startOnLoad: false,
@@ -220,6 +221,27 @@ const VAD = ({ onSpeechEnd, isReady, status, progressiveReadiness }) => {
                             </div>
                         )}
                     </div>
+
+                    <button
+                        className="troubleshooting-guide-link"
+                        onClick={() => setShowTroubleshootingGuide(!showTroubleshootingGuide)}
+                    >
+                        {showTroubleshootingGuide ? 'Hide' : 'Show'} troubleshooting guide
+                    </button>
+
+                    {showTroubleshootingGuide && (
+                        <div className="troubleshooting-guide">
+                            <h4>Advanced Troubleshooting</h4>
+                            <ul>
+                                <li>Check if another app is using your microphone</li>
+                                <li>Try closing other tabs/apps that might be accessing audio</li>
+                                <li>Restart your browser completely</li>
+                                <li>Check your system audio settings</li>
+                                <li>Try a different browser if issues persist</li>
+                                <li>Update your browser to the latest version</li>
+                            </ul>
+                        </div>
+                    )}
                 </div>
             )}
 
