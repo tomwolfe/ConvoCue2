@@ -10,6 +10,7 @@ const VAD = ({ onSpeechEnd, isReady, status }) => {
         },
         workletURL: "/vad.worklet.bundle.min.js",
         modelURL: "/silero_vad_v5.onnx",
+        model: "v5",
         onnxWASMPaths: "/",
     });
 
