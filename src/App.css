@@ -1,0 +1,236 @@
+:root {
+    --primary: #6366f1;
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: #f8fafc;
+}
+
+body {
+    margin: 0;
+    background-color: var(--bg);
+}
+
+.app {
+    font-family: system-ui, -apple-system, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+header h1 span {
+    color: var(--primary);
+    font-size: 0.8rem;
+    vertical-align: top;
+    margin-left: 2px;
+}
+
+.header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+.battery-container {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.battery-hud {
+    width: 60px;
+    height: 10px;
+    background: var(--card);
+    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.1);
+    overflow: hidden;
+}
+
+.battery-fill {
+    height: 100%;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s;
+}
+
+.battery-text {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    font-weight: 600;
+}
+
+.persona-selector {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.persona-selector button {
+    background: var(--card);
+    border: 1px solid transparent;
+    color: var(--text);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.persona-selector button:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.persona-selector button.active {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.2);
+    font-weight: 600;
+}
+
+.suggestion-hud {
+    background: var(--card);
+    padding: 1.5rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.intent-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    margin-bottom: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.suggestion-box {
+    font-size: 1.25rem;
+    line-height: 1.5;
+    min-height: 3.5rem;
+    color: #e2e8f0;
+}
+
+.transcript-area {
+    flex-grow: 1;
+    background: rgba(255,255,255,0.02);
+    padding: 1rem;
+    border-radius: 12px;
+}
+
+.transcript-area h3 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.5;
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.transcript-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    opacity: 0.8;
+}
+
+footer {
+    margin-top: auto;
+    padding-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.btn-mic {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+}
+
+.btn-mic:active {
+    transform: scale(0.96);
+}
+
+.btn-mic.active {
+    background: #ef4444;
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
+}
+
+.btn-mic:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    opacity: 0.6;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--card);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.3s ease-out;
+}
+
+.audio-visualizer-simple {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wave-animation {
+    width: 120px;
+    height: 4px;
+    background: var(--primary);
+    border-radius: 2px;
+    animation: wave-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes wave-pulse {
+    0% { transform: scaleX(0.3); opacity: 0.4; }
+    50% { transform: scaleX(1); opacity: 1; }
+    100% { transform: scaleX(0.3); opacity: 0.4; }
+}
