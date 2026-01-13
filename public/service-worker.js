@@ -6,9 +6,6 @@ const MODEL_FILES = [
     '/ort-wasm-simd-threaded.mjs',
     '/ort-wasm-simd-threaded.wasm',
     '/silero_vad_v5.onnx',
-    // Add Hugging Face transformer model files that will be cached by the library
-    'https://cdn.jsdelivr.net/npm/@huggingface/transformers@latest/dist/transformers.js',
-    // ONNX model files will be cached dynamically as they are requested
 ];
 
 self.addEventListener('install', (event) => {
@@ -32,10 +29,8 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('fetch', (event) => {
     // Handle requests for model files
-    const urlPath = event.request.url.substring(event.request.url.indexOf('/'));
     const isModelFile = MODEL_FILES.some(model =>
         event.request.url.includes(model) ||
-        urlPath.includes(model) ||
         event.request.url.includes('onnx') ||
         event.request.url.includes('whisper') ||
         event.request.url.includes('SmolLM')
