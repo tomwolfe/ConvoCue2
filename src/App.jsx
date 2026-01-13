@@ -92,10 +92,10 @@ const App = () => {
                             {isPaused ? <Info size={14} className="paused-icon" /> : <Battery size={14} />}
                             <span>{Math.round(battery)}%</span>
                         </div>
-                        <div className="battery-hud" onClick={togglePause}>
-                            <div className={`battery-fill ${isExhausted && !isPaused ? 'critical' : ''}`} style={{ 
-                                width: `${battery}%`, 
-                                backgroundColor: isPaused ? '#94a3b8' : isExhausted ? '#ef4444' : battery < 50 ? '#f59e0b' : '#10b981' 
+                        <div className={`battery-hud ${battery < 30 && !isPaused && !isExhausted ? 'warning' : ''}`} onClick={togglePause}>
+                            <div className={`battery-fill ${isExhausted && !isPaused ? 'critical' : ''}`} style={{
+                                width: `${battery}%`,
+                                backgroundColor: isPaused ? '#94a3b8' : isExhausted ? '#ef4444' : battery < 50 ? '#f59e0b' : '#10b981'
                             }}></div>
                             {isPaused && <div className="battery-paused-overlay">PAUSED</div>}
                             {lastDrain && (
@@ -158,15 +158,23 @@ const App = () => {
             </div>
 
             <main>
-                <SuggestionHUD 
-                    suggestion={suggestion} 
-                    intent={detectedIntent} 
-                    onDismiss={dismissSuggestion} 
+                {battery < 30 && !isExhausted && (
+                    <div className="battery-warning-banner">
+                        <div className="warning-content">
+                            <Battery size={16} className="warning-icon" />
+                            <span>Your social battery is running low ({Math.round(battery)}%). Consider wrapping up the conversation soon.</span>
+                        </div>
+                    </div>
+                )}
+                <SuggestionHUD
+                    suggestion={suggestion}
+                    intent={detectedIntent}
+                    onDismiss={dismissSuggestion}
                     isProcessing={isProcessing}
                     battery={battery}
                     isExhausted={isExhausted}
                 />
-                
+
                 <div className="transcript-container">
                     <div className="transcript-header">
                         <h3>Live Transcript</h3>
@@ -227,6 +235,7 @@ const App = () => {
                         </div>
                         <div className="loading-tips">
                             <p>💡 Tip: The first load may take 1-2 minutes as models download. Future sessions will be faster!</p>
+                            <p>While you wait, here's how ConvoCue helps: <strong>It listens to your conversation and suggests the right thing to say next, helping you navigate social situations with confidence.</strong></p>
                         </div>
                     </div>
                 )}
@@ -237,12 +246,13 @@ const App = () => {
                     <div className="tutorial-modal" onClick={e => e.stopPropagation()}>
                         <h2>Welcome to ConvoCue 2</h2>
                         <p>Your real-time social co-pilot.</p>
-                        
+
                         <div className="tutorial-step">
                             <div className="step-icon"><Battery size={20} /></div>
                             <div className="step-content">
                                 <h4>Social Battery</h4>
                                 <p>Cues drain your battery based on intensity. Low battery triggers "Exhaustion" mode for easier exits. Your battery recovers when conversations pause.</p>
+                                <p><strong>Example:</strong> Saying "I'm not sure about that" drains less than "I strongly disagree" (conflict).</p>
                             </div>
                         </div>
 
@@ -251,6 +261,7 @@ const App = () => {
                             <div className="step-content">
                                 <h4>Personas</h4>
                                 <p>Switch between Anxiety Coach, EQ Guide, or Pro Exec to change the style of suggestions.</p>
+                                <p><strong>Tip:</strong> Start with "Anxiety Coach" if you're new to the app.</p>
                             </div>
                         </div>
 
@@ -259,6 +270,18 @@ const App = () => {
                             <div className="step-content">
                                 <h4>Speaker Toggle</h4>
                                 <p>Tap the speaker badge to tell the AI who is talking for better context.</p>
+                                <p><strong>Pro tip:</strong> Switch to "You" when you're speaking to get better suggestions.</p>
+                            </div>
+                        </div>
+
+                        <div className="tutorial-step">
+                            <div className="step-icon"><Sparkles size={20} /></div>
+                            <div className="step-content">
+                                <h4>How to Use</h4>
+                                <p>1. Click the mic to start listening</p>
+                                <p>2. Speak normally - the AI will detect intent and suggest responses</p>
+                                <p>3. Use quick actions for instant responses</p>
+                                <p>4. End your session to get insights</p>
                             </div>
                         </div>
 

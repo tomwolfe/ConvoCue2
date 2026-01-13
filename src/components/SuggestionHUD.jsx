@@ -46,6 +46,12 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, i
                             <span>Exhausted Mode</span>
                         </div>
                     )}
+                    {battery < 30 && !isExhausted && (
+                        <div className="intent-badge" style={{ backgroundColor: '#f59e0b', marginBottom: 0 }}>
+                            <Battery size={12} />
+                            <span>Low Battery</span>
+                        </div>
+                    )}
                 </div>
                 <button
                     onClick={onDismiss}
