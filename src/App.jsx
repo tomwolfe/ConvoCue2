@@ -4,6 +4,8 @@ import { useML } from './useML';
 import VAD from './components/VAD';
 import SuggestionHUD from './components/SuggestionHUD';
 import SessionSummary from './components/SessionSummary';
+import SessionHistoryModal from './components/SessionHistoryModal';
+import { useSessionHistory } from './hooks/useSessionHistory';
 import { AppConfig } from './core/config';
 import {
     ShieldAlert,
@@ -17,7 +19,8 @@ import {
     RotateCcw,
     ChevronRight,
     LogOut,
-    Sparkles
+    Sparkles,
+    History
 } from 'lucide-react';
 
 const ICON_MAP = {
@@ -28,6 +31,8 @@ const ICON_MAP = {
 };
 
 const App = () => {
+    const [sessionToLoad, setSessionToLoad] = useState(null);
+
     const {
         status,
         progress,
@@ -65,10 +70,32 @@ const App = () => {
         progressiveReadiness,
         sttStage,
         llmStage
-    } = useML();
+    } = useML(sessionToLoad);
+
+    const sessionHistory = useSessionHistory();
+    const {
+        sessions,
+        saveSession,
+        loadSession,
+        deleteSession,
+        exportSession,
+        exportAllSessions,
+        clearAllSessions,
+        getSessionStats
+    } = sessionHistory;
+
+    const handleLoadSession = (sessionId) => {
+        const session = loadSession(sessionId);
+        if (session) {
+            // Set the session data to trigger a re-initialization of useML
+            setSessionToLoad(session);
+            setShowSessionHistory(false);
+        }
+    };
 
     const [showTutorial, setShowTutorial] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [showSessionHistory, setShowSessionHistory] = useState(false);
 
     return (
         <div className="app">
@@ -83,6 +110,14 @@ const App = () => {
                     </button>
                 </div>
                 <div className="header-right">
+                    <button
+                        className="btn-session-history"
+                        onClick={() => setShowSessionHistory(true)}
+                        title="View session history"
+                    >
+                        <History size={14} />
+                        <span>History</span>
+                    </button>
                     <button
                         className={`btn-end-session ${(isExhausted && transcript.length > 5) ? 'pulse-urgent' : ''}`}
                         onClick={summarizeSession}
@@ -144,16 +179,44 @@ const App = () => {
             </header>
 
             {(isSummarizing || sessionSummary || summaryError) && (
-                <SessionSummary 
-                    summary={sessionSummary} 
-                    transcript={transcript} 
-                    battery={battery} 
+                <SessionSummary
+                    summary={sessionSummary}
+                    transcript={transcript}
+                    battery={battery}
                     initialBattery={initialBattery}
-                    onNewSession={startNewSession} 
+                    onNewSession={startNewSession}
                     error={summaryError}
                     onRetry={summarizeSession}
-                    onClose={closeSummary}
+                    onClose={() => {
+                        // Save session when closing summary
+                        if (sessionSummary && transcript.length > 0) {
+                            const stats = {
+                                totalCount: transcript.length,
+                                meCount: transcript.filter(t => t.speaker === 'me').length,
+                                themCount: transcript.filter(t => t.speaker === 'them').length,
+                                totalDrain: Math.round(initialBattery - battery)
+                            };
+                            saveSession(transcript, battery, initialBattery, stats);
+                        }
+                        closeSummary();
+                    }}
                 />
+            )}
+
+            {showSessionHistory && (
+                <div className="session-history-overlay" onClick={() => setShowSessionHistory(false)}>
+                    <div className="session-history-modal-wrapper" onClick={e => e.stopPropagation()}>
+                        <SessionHistoryModal
+                            sessions={sessions}
+                            onLoadSession={handleLoadSession}
+                            onDeleteSession={deleteSession}
+                            onExportSession={exportSession}
+                            onExportAll={exportAllSessions}
+                            onClose={() => setShowSessionHistory(false)}
+                            stats={getSessionStats()}
+                        />
+                    </div>
+                </div>
             )}
 
             {showSettings && (

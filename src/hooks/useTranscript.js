@@ -39,5 +39,9 @@ export const useTranscript = () => {
         setConsecutiveCount(0);
     }, []);
 
-    return { transcript, addEntry, currentSpeaker, setCurrentSpeaker, toggleSpeaker, clearTranscript, shouldPulse, nudgeSpeaker, consecutiveCount };
+    const setTranscriptValue = useCallback((value) => {
+        setTranscript(value);
+    }, []);
+
+    return { transcript, addEntry, currentSpeaker, setCurrentSpeaker, toggleSpeaker, clearTranscript, shouldPulse, nudgeSpeaker, consecutiveCount, setTranscript: setTranscriptValue };
 };

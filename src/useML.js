@@ -4,7 +4,7 @@ import { AppConfig, BRIDGE_PHRASES } from './core/config';
 import { useSocialBattery } from './hooks/useSocialBattery';
 import { useTranscript } from './hooks/useTranscript';
 
-export const useML = () => {
+export const useML = (initialState = null) => {
     const [suggestion, setSuggestion] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [detectedIntent, setDetectedIntent] = useState('general');
@@ -12,15 +12,32 @@ export const useML = () => {
     const [sessionSummary, setSessionSummary] = useState(null);
     const [isSummarizing, setIsSummarizing] = useState(false);
     const [summaryError, setSummaryError] = useState(null);
-    
+
     const {
-        battery, deduct, reset: resetBattery, batteryRef,
+        battery, deduct, reset: resetBattery, batteryRef, setBattery,
         sensitivity, setSensitivity, isPaused, togglePause, recharge, isExhausted, lastDrain
     } = useSocialBattery();
     const {
         transcript, addEntry, currentSpeaker, toggleSpeaker, clearTranscript,
-        shouldPulse, nudgeSpeaker, consecutiveCount
+        shouldPulse, nudgeSpeaker, consecutiveCount, setTranscript
     } = useTranscript();
+
+    // Initialize with initial state if provided (for loading sessions)
+    useEffect(() => {
+        if (initialState) {
+            // Load session data using the functions from child hooks
+            if (initialState.battery !== undefined) {
+                setBattery(initialState.battery);
+            }
+            if (initialState.transcript) {
+                setTranscript(initialState.transcript);
+            }
+            if (initialState.persona) {
+                setPersona(initialState.persona);
+            }
+            // Note: We don't restore all state as some values are dynamic
+        }
+    }, [initialState]);
 
     const sttWorkerRef = useRef(null);
     const llmWorkerRef = useRef(null);

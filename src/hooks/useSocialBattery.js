@@ -166,10 +166,16 @@ export const useSocialBattery = () => {
 
     const isExhausted = battery < AppConfig.minBatteryThreshold;
 
-    return { 
-        battery, deduct, reset, batteryRef, 
-        sensitivity, setSensitivity, 
+    const setBatteryValue = useCallback((value) => {
+        setBattery(value);
+        batteryRef.current = value;
+    }, []);
+
+    return {
+        battery, deduct, reset, batteryRef,
+        sensitivity, setSensitivity,
         isPaused, togglePause,
-        recharge, isExhausted, lastDrain
+        recharge, isExhausted, lastDrain,
+        setBattery: setBatteryValue
     };
 };
