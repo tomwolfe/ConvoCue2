@@ -33,28 +33,28 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, i
         : (QUICK_ACTIONS[intent] || QUICK_ACTIONS.social);
 
     return (
-        <div className={`suggestion-hud ${isExhausted ? 'exhausted' : ''}`}>
+        <div className={`suggestion-hud ${isExhausted ? 'exhausted' : ''}`} role="region" aria-label="Suggestion HUD">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                    <div className="intent-badge" style={{ backgroundColor: ui.color, marginBottom: 0 }}>
-                        {isProcessing ? <Loader2 size={12} className="animate-spin" /> : ui.icon}
+                    <div className="intent-badge" style={{ backgroundColor: ui.color, marginBottom: 0 }} aria-label={`Intent: ${ui.label}`}>
+                        {isProcessing ? <Loader2 size={12} className="animate-spin" aria-hidden="true" /> : ui.icon}
                         <span>{ui.label} {isProcessing && '(Updating...)'}</span>
                     </div>
                     {battery < 30 && !isExhausted && (
-                        <div className="intent-badge" style={{ backgroundColor: '#f59e0b', marginBottom: 0 }}>
-                            <Battery size={12} />
+                        <div className="intent-badge" style={{ backgroundColor: '#f59e0b', marginBottom: 0 }} aria-label="Low Battery">
+                            <Battery size={12} aria-hidden="true" />
                             <span>Low Battery</span>
                         </div>
                     )}
                     {battery < 20 && !isExhausted && (
-                        <div className="intent-badge battery-critical-badge">
-                            <AlertCircle size={12} />
+                        <div className="intent-badge battery-critical-badge" aria-label="Critical Battery">
+                            <AlertCircle size={12} aria-hidden="true" />
                             <span>Critical Battery</span>
                         </div>
                     )}
                     {isExhausted && (
-                        <div className="intent-badge exhausted-badge">
-                            <AlertCircle size={12} />
+                        <div className="intent-badge exhausted-badge" aria-label="Exhausted Mode">
+                            <AlertCircle size={12} aria-hidden="true" />
                             <span>Exhausted Mode</span>
                         </div>
                     )}
@@ -63,8 +63,15 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, i
                     onClick={onDismiss}
                     style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
                     title="Dismiss"
+                    aria-label="Dismiss suggestion"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onDismiss();
+                        }
+                    }}
                 >
-                    <X size={16} />
+                    <X size={16} aria-hidden="true" />
                 </button>
             </div>
 
@@ -98,18 +105,25 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, i
             </div>
 
             <div className={`quick-actions-container ${isExhausted ? 'priority-exhaustion' : ''}`}>
-                <div className="quick-actions-label">
-                    <Zap size={10} />
+                <div className="quick-actions-label" aria-label={isExhausted ? 'Suggested Exit Strategies' : 'Quick Responses'}>
+                    <Zap size={10} aria-hidden="true" />
                     <span>{isExhausted ? 'Suggested Exit Strategies' : 'Quick Responses'}</span>
                 </div>
-                <div className="quick-actions-list">
+                <div className="quick-actions-list" role="toolbar" aria-label={isExhausted ? 'Suggested Exit Strategies' : 'Quick Responses'}>
                     {actions.map((action, i) => (
                         <button
                             key={i}
                             className={`quick-action-btn ${copied === i ? 'copied' : ''} ${isExhausted ? 'large-action' : ''}`}
                             onClick={() => handleQuickAction(action.text, i)}
+                            aria-label={`Quick action: ${action.label}`}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    handleQuickAction(action.text, i);
+                                }
+                            }}
                         >
-                            {copied === i ? <ClipboardCheck size={12} /> : <Zap size={12} style={{ opacity: 0.6 }} />}
+                            {copied === i ? <ClipboardCheck size={12} aria-hidden="true" /> : <Zap size={12} style={{ opacity: 0.6 }} aria-hidden="true" />}
                             <span>{action.label}</span>
                         </button>
                     ))}

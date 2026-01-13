@@ -148,9 +148,20 @@ const VAD = ({ onSpeechEnd, isReady, status, progressiveReadiness }) => {
                 onClick={handleMicClick}
                 disabled={(!isReady && progressiveReadiness !== 'partial') || isRequestingPermission}
                 className={`btn-mic ${vad.listening ? 'active' : ''} ${permissionDenied ? 'permission-denied' : ''}`}
+                aria-label={
+                    isRequestingPermission ? 'Requesting microphone permission...' :
+                    vad.listening ? 'Stop listening' :
+                    permissionDenied ? 'Microphone permission denied' : 'Start listening'
+                }
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleMicClick();
+                    }
+                }}
             >
-                {isRequestingPermission ? <Loader2 className="animate-spin" size={24} /> :
-                 vad.listening ? <Mic size={24} /> : <MicOff size={24} />}
+                {isRequestingPermission ? <Loader2 className="animate-spin" size={24} aria-hidden="true" /> :
+                 vad.listening ? <Mic size={24} aria-hidden="true" /> : <MicOff size={24} aria-hidden="true" />}
                 <span>
                     {isRequestingPermission ? 'Requesting permission...' :
                      vad.listening ? 'Listening...' :

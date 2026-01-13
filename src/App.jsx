@@ -42,6 +42,7 @@ const App = () => {
     const [sessionToLoad, setSessionToLoad] = useState(null);
     const [showGoals, setShowGoals] = useState(false);
     const [showAchievements, setShowAchievements] = useState(false);
+    const [showGlobalError, setShowGlobalError] = useState(true); // User can dismiss global errors
 
     const {
         status,
@@ -79,7 +80,9 @@ const App = () => {
         initialBattery,
         progressiveReadiness,
         sttStage,
-        llmStage
+        llmStage,
+        globalError,
+        performanceMode
     } = useML(sessionToLoad);
 
     const sessionHistory = useSessionHistory();
@@ -165,63 +168,168 @@ const App = () => {
 
     return (
         <div className="app">
-            <header>
+            {globalError && showGlobalError && (
+                <div className="global-error-banner" role="alert" aria-live="assertive">
+                    <div className="error-content">
+                        <AlertTriangle size={16} className="error-icon" />
+                        <span className="error-message">{globalError}</span>
+                        <button
+                            className="dismiss-error-btn"
+                            onClick={() => setShowGlobalError(false)}
+                            aria-label="Dismiss error message"
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
+                </div>
+            )}
+            <header role="banner">
                 <div className="header-left">
                     <h1>ConvoCue <span>2</span></h1>
-                    <button className="btn-icon" onClick={() => setShowTutorial(true)} title="How it works">
-                        <Info size={18} />
+                    <button
+                        className="btn-icon"
+                        onClick={() => setShowTutorial(true)}
+                        title="How it works"
+                        aria-label="Open tutorial"
+                        onKeyDown={(e) => e.key === 'Enter' && setShowTutorial(true)}
+                    >
+                        <Info size={18} aria-hidden="true" />
                     </button>
-                    <button className={`btn-icon ${showSettings ? 'active' : ''}`} onClick={() => setShowSettings(!showSettings)} title="Settings">
-                        <RotateCcw size={18} style={{ transform: showSettings ? 'rotate(-90deg)' : 'none', transition: 'transform 0.3s' }} />
+                    <button
+                        className={`btn-icon ${showSettings ? 'active' : ''}`}
+                        onClick={() => setShowSettings(!showSettings)}
+                        title="Settings"
+                        aria-label={showSettings ? "Close settings" : "Open settings"}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setShowSettings(!showSettings);
+                            }
+                        }}
+                    >
+                        <RotateCcw size={18} style={{ transform: showSettings ? 'rotate(-90deg)' : 'none', transition: 'transform 0.3s' }} aria-hidden="true" />
                     </button>
                 </div>
                 <div className="header-right">
+                    {/* Performance indicator */}
+                    {performanceMode && (
+                        <div
+                            className={`performance-indicator ${performanceMode}`}
+                            title={`Performance mode: ${performanceMode}`}
+                            aria-label={`Performance mode: ${performanceMode}`}
+                        >
+                            {performanceMode === 'low' && '⚡️'}
+                            {performanceMode === 'normal' && '⚡️⚡️'}
+                            {performanceMode === 'high' && '⚡️⚡️⚡️'}
+                        </div>
+                    )}
                     <button
                         className="btn-goals prominent-feature"
                         onClick={() => setShowGoals(true)}
                         title="View conversation goals"
+                        aria-label="View conversation goals"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setShowGoals(true);
+                            }
+                        }}
                     >
-                        <Target size={16} />
+                        <Target size={16} aria-hidden="true" />
                         <span>Goals</span>
                     </button>
                     <button
                         className="btn-achievements prominent-feature"
                         onClick={() => setShowAchievements(true)}
                         title="View achievements"
+                        aria-label="View achievements"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setShowAchievements(true);
+                            }
+                        }}
                     >
-                        <Trophy size={16} />
+                        <Trophy size={16} aria-hidden="true" />
                         <span>Achievements</span>
                     </button>
                     <button
                         className="btn-insights prominent-feature"
                         onClick={() => setShowInsights(true)}
                         title="View conversation insights"
+                        aria-label="View conversation insights"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setShowInsights(true);
+                            }
+                        }}
                     >
-                        <BarChart3 size={16} />
+                        <BarChart3 size={16} aria-hidden="true" />
                         <span>Insights</span>
                     </button>
                     <button
                         className="btn-session-history prominent-feature"
                         onClick={() => setShowSessionHistory(true)}
                         title="View session history"
+                        aria-label="View session history"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setShowSessionHistory(true);
+                            }
+                        }}
                     >
-                        <History size={16} />
+                        <History size={16} aria-hidden="true" />
                         <span>History</span>
                     </button>
                     <button
                         className={`btn-end-session ${(isExhausted && transcript.length > 5) ? 'pulse-urgent' : ''}`}
                         onClick={summarizeSession}
                         disabled={transcript.length === 0 || isSummarizing}
+                        aria-label={isSummarizing ? 'Summarizing session...' : 'End current session'}
+                        onKeyDown={(e) => {
+                            if ((e.key === 'Enter' || e.key === ' ') && !isSummarizing && transcript.length > 0) {
+                                e.preventDefault();
+                                summarizeSession();
+                            }
+                        }}
                     >
-                        <LogOut size={14} />
+                        <LogOut size={14} aria-hidden="true" />
                         <span>{isSummarizing ? 'Summarizing...' : 'End Session'}</span>
                     </button>
-                    <div className="battery-section" title="Social Battery">
-                        <div className="battery-label" onClick={() => recharge(10)}>
-                            {isPaused ? <Info size={14} className="paused-icon" /> : <Battery size={14} />}
+                    <div className="battery-section" title="Social Battery" role="region" aria-label="Social Battery">
+                        <div
+                            className="battery-label"
+                            onClick={() => recharge(10)}
+                            tabIndex="0"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    recharge(10);
+                                }
+                            }}
+                            aria-label={`Social Battery: ${Math.round(battery)}%`}
+                        >
+                            {isPaused ? <Info size={14} className="paused-icon" aria-hidden="true" /> : <Battery size={14} aria-hidden="true" />}
                             <span>{Math.round(battery)}%</span>
                         </div>
-                        <div className={`battery-hud ${battery < 30 && !isPaused && !isExhausted ? 'warning' : ''}`} onClick={togglePause}>
+                        <div
+                            className={`battery-hud ${battery < 30 && !isPaused && !isExhausted ? 'warning' : ''}`}
+                            onClick={togglePause}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    togglePause();
+                                }
+                            }}
+                            tabIndex="0"
+                            role="progressbar"
+                            aria-valuenow={battery}
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                            aria-label="Social Battery Level"
+                        >
                             <div className={`battery-fill ${isExhausted && !isPaused ? 'critical' : ''}`} style={{
                                 width: `${battery}%`,
                                 backgroundColor: isPaused ? '#94a3b8' : isExhausted ? '#ef4444' : battery < 50 ? '#f59e0b' : '#10b981'
@@ -383,12 +491,21 @@ const App = () => {
                 </div>
             )}
 
-            <div className="persona-nav">
+            <div className="persona-nav" role="tablist" aria-label="Personas">
                 {Object.entries(AppConfig.personas).map(([id, p]) => (
                     <div key={id} className="persona-tooltip-wrapper">
                         <button
                             className={`persona-pill ${persona === id ? 'active' : ''}`}
                             onClick={() => setPersona(id)}
+                            aria-label={`Select ${p.label} persona`}
+                            aria-selected={persona === id ? 'true' : 'false'}
+                            role="tab"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setPersona(id);
+                                }
+                            }}
                         >
                             {ICON_MAP[p.icon]}
                             <span>{p.label}</span>
@@ -407,11 +524,11 @@ const App = () => {
                 ))}
             </div>
 
-            <main>
+            <main role="main">
                 {battery < 30 && !isExhausted && (
-                    <div className="battery-warning-banner">
+                    <div className="battery-warning-banner" role="alert" aria-live="polite">
                         <div className="warning-content">
-                            <Battery size={16} className="warning-icon" />
+                            <Battery size={16} className="warning-icon" aria-hidden="true" />
                             {battery < 20 ? (
                                 <span>Your social battery is critically low ({Math.round(battery)}%). Switching to Exhausted Mode for easier exits.</span>
                             ) : (
@@ -429,23 +546,33 @@ const App = () => {
                     isExhausted={isExhausted}
                 />
 
-                <div className="transcript-container">
+                <div className="transcript-container" role="region" aria-label="Live Transcript">
                     <div className="transcript-header">
                         <h3>Live Transcript</h3>
-                        <button className={`btn-toggle-speaker ${shouldPulse ? 'nudge-pulse' : ''}`} onClick={toggleSpeaker}>
-                            {currentSpeaker === 'me' ? <User size={14} /> : <Users size={14} />}
+                        <button
+                            className={`btn-toggle-speaker ${shouldPulse ? 'nudge-pulse' : ''}`}
+                            onClick={toggleSpeaker}
+                            aria-label={`Current speaker: ${currentSpeaker === 'me' ? 'You' : 'Them'}. Click to toggle.`}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    toggleSpeaker();
+                                }
+                            }}
+                        >
+                            {currentSpeaker === 'me' ? <User size={14} aria-hidden="true" /> : <Users size={14} aria-hidden="true" />}
                             <span>Talking: {currentSpeaker === 'me' ? 'You' : 'Them'}</span>
                             {consecutiveCount >= 3 && <div className="speaker-hint">Switch?</div>}
                         </button>
                     </div>
-                    <div className="transcript-scroll">
+                    <div className="transcript-scroll" role="log" aria-live="polite">
                         {transcript.length === 0 ? (
-                            <div className="empty-transcript">No speech detected yet. Start talking!</div>
+                            <div className="empty-transcript" aria-label="Empty transcript">No speech detected yet. Start talking!</div>
                         ) : (
                             transcript.map((entry, i) => (
-                                <div key={i} className={`transcript-entry ${entry.speaker}`}>
-                                    <span className="speaker-icon">
-                                        {entry.speaker === 'me' ? <User size={12} /> : <Users size={12} />}
+                                <div key={i} className={`transcript-entry ${entry.speaker}`} role="listitem">
+                                    <span className="speaker-icon" aria-label={entry.speaker === 'me' ? 'You said' : 'They said'}>
+                                        {entry.speaker === 'me' ? <User size={12} aria-hidden="true" /> : <Users size={12} aria-hidden="true" />}
                                     </span>
                                     <span className="entry-text">{entry.text}</span>
                                     <span className="entry-time">{entry.timestamp}</span>

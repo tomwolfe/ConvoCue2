@@ -121,6 +121,19 @@ export const useML = (initialState = null) => {
     const suggestionCache = useRef(new Map());
     const intentHistory = useRef([]); // Track recent intents for context
 
+    // Performance optimization: Reduce processing frequency on low-end devices
+    const [processingInterval, setProcessingInterval] = useState(0); // 0 = no delay, higher = more delay
+    useEffect(() => {
+        if (performanceMode === 'low') {
+            setProcessingInterval(300); // Add slight delay between processing to reduce CPU usage
+        } else {
+            setProcessingInterval(0);
+        }
+    }, [performanceMode]);
+
+    // Global error handling state
+    const [globalError, setGlobalError] = useState(null);
+
     // Add a fast lookup for common conversation starters to provide instant responses
     const fastLookupMap = useRef(new Map([
         // Common greetings
@@ -201,6 +214,16 @@ export const useML = (initialState = null) => {
             return;
         }
 
+        // Performance optimization: Skip processing if on low performance mode and processing interval is active
+        if (processingInterval > 0) {
+            // Only process every nth call to reduce CPU usage
+            const shouldProcess = Math.random() < 0.7; // Process 70% of the time in low perf mode
+            if (!shouldProcess) {
+                setIsProcessing(false);
+                return;
+            }
+        }
+
         // Enhanced cache key with recent intent context
         const recentIntents = intentHistory.current
             .filter(item => Date.now() - item.timestamp < 30000) // Last 30 seconds
@@ -235,13 +258,16 @@ export const useML = (initialState = null) => {
             ? "URGENT: User is exhausted. Suggest a polite exit or minimal energy response."
             : personaConfig.prompt;
 
+        // Performance optimization: Adjust timeout based on performance mode
+        const timeoutDuration = performanceMode === 'low' ? 5000 : 3000; // Longer timeout for low perf devices
+
         // Store the taskId and timeout ID together for proper cleanup
         const timeoutId = setTimeout(() => {
             // If LLM takes too long, show a more specific bridge phrase
             if (isProcessing && (suggestion === BRIDGE_PHRASES[intent] || suggestion === BRIDGE_PHRASES.general)) {
                 setSuggestion(`Still thinking about ${intent}...`);
             }
-        }, 3000); // 3 second timeout
+        }, timeoutDuration); // Adjust timeout based on performance mode
 
         // Store timeout ID for cleanup
         llmTimeoutsRef.current.set(taskId, timeoutId);
@@ -257,7 +283,7 @@ export const useML = (initialState = null) => {
                 }
             });
         }
-    }, [persona, deduct, addEntry, currentSpeaker]);
+    }, [persona, deduct, addEntry, currentSpeaker, processingInterval, performanceMode]);
 
     // Handle LLM results and cache them
     const handleLlmResult = useCallback((sug, taskId) => {
@@ -299,6 +325,7 @@ export const useML = (initialState = null) => {
 
         setSuggestion(sug);
         setIsProcessing(false);
+        setGlobalError(null); // Clear any global errors when successful
     }, [detectedIntent, persona, battery]);
 
     const dismissSuggestion = useCallback(() => {
@@ -317,17 +344,38 @@ export const useML = (initialState = null) => {
         const memory = navigator.deviceMemory || 4; // Assume 4GB if not available
         const userAgent = navigator.userAgent.toLowerCase();
 
+        // Additional performance indicators
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        const effectiveType = connection ? connection.effectiveType : '4g';
+        const downlink = connection ? connection.downlink : 10; // Mbps
+
         // Determine if device is low-resource based on specs
         const isLowResource = hardwareConcurrency <= 2 || memory <= 4 ||
-                             userAgent.includes('mobile') || userAgent.includes('android');
+                             userAgent.includes('mobile') || userAgent.includes('android') ||
+                             effectiveType === 'slow-2g' || effectiveType === '2g' || downlink < 1;
 
         return {
             hardwareConcurrency,
             memory,
             isLowResource,
-            userAgent
+            userAgent,
+            effectiveType,
+            downlink
         };
     };
+
+    // Performance optimization settings based on device capabilities
+    const [performanceMode, setPerformanceMode] = useState('auto'); // 'low', 'normal', 'high', 'auto'
+
+    // Calculate performance mode based on device info
+    useEffect(() => {
+        const deviceInfo = getDeviceInfo();
+        if (deviceInfo.isLowResource) {
+            setPerformanceMode('low');
+        } else {
+            setPerformanceMode('normal');
+        }
+    }, []);
 
     // Eager fetch model files to prime browser cache
     useEffect(() => {
@@ -346,7 +394,14 @@ export const useML = (initialState = null) => {
         ];
 
         // Preload model files with progress tracking
-        modelFiles.forEach(file => {
+        // Adjust model loading based on performance mode
+        let modelFilesToLoad = modelFiles;
+        if (performanceMode === 'low') {
+            // For low-performance devices, reduce the number of models to preload
+            modelFilesToLoad = modelFiles.slice(0, Math.ceil(modelFiles.length / 2));
+        }
+
+        modelFilesToLoad.forEach(file => {
             fetch(file)
                 .then(response => {
                     if (response.ok) {
@@ -432,7 +487,17 @@ export const useML = (initialState = null) => {
                 case 'stt_result':
                     if (text) processTextRef.current(text);
                     break;
-                case 'error': console.error('STT Worker error:', error); break;
+                case 'error':
+                    console.error('STT Worker error:', error);
+                    // Provide more user-friendly error messages for STT
+                    if (error.includes('model') || error.includes('download')) {
+                        setGlobalError('Failed to load speech recognition model. Check your internet connection and try refreshing.');
+                    } else if (error.includes('memory')) {
+                        setGlobalError('Device running low on memory. Try closing other tabs and refreshing.');
+                    } else {
+                        setGlobalError(`Speech recognition error: ${error.substring(0, 100)}...`);
+                    }
+                    break;
             }
         };
 
@@ -466,7 +531,18 @@ export const useML = (initialState = null) => {
                     console.error('LLM Worker error:', error);
                     setIsProcessing(false);
                     setIsSummarizing(false);
-                    setSummaryError(error);
+
+                    // Provide more user-friendly error messages
+                    if (error.includes('out of memory') || error.includes('memory')) {
+                        setGlobalError('Device running low on memory. Try closing other tabs and refreshing.');
+                        setSummaryError('Memory error occurred. Please refresh the page.');
+                    } else if (error.includes('timeout') || error.includes('timed out')) {
+                        setGlobalError('Processing timed out. The AI is taking too long to respond. Try again.');
+                        setSummaryError('Processing timed out. Please try again.');
+                    } else {
+                        setGlobalError(`AI processing error: ${error.substring(0, 100)}...`);
+                        setSummaryError(error);
+                    }
                     break;
             }
         };
@@ -525,6 +601,8 @@ export const useML = (initialState = null) => {
         summarizeSession, startNewSession, closeSummary, sessionSummary, isSummarizing, summaryError,
         initialBattery: initialBatteryRef.current,
         progressiveReadiness,
-        sttStage, llmStage
+        sttStage, llmStage,
+        globalError,
+        performanceMode
     };
 };
