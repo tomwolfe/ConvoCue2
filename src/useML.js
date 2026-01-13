@@ -81,9 +81,9 @@ export const useML = () => {
 
         const speakerLabel = currentSpeaker === 'me' ? 'Me' : 'Them';
         messagesRef.current.push({ role: 'user', content: `${speakerLabel}: ${text}` });
-        if (messagesRef.current.length > 10) messagesRef.current.shift();
+        if (messagesRef.current.length > 6) messagesRef.current.shift();
 
-        if (!needsSuggestion) {
+        if (!needsSuggestion || currentSpeaker === 'me') {
             setIsProcessing(false);
             setSuggestion('');
             return;

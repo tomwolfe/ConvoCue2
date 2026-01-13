@@ -32,18 +32,16 @@ self.onmessage = async (event) => {
                 if (!llmPipeline) throw new Error('LLM model not loaded');
                 const { messages, context, instruction } = data;
                 
-                // Leaner system prompt for SmolLM2 performance
-                const systemPrompt = `Role: ${context.persona}. Intent: ${context.intent}. Battery: ${context.battery}%. 
-Rule: ONE suggestion, <15 words, NO preamble. 
-Goal: ${instruction}`;
+                // Optimized 80/20 prompt: Minimal tokens, high clarity
+                const systemPrompt = `Role:${context.persona}. Intent:${context.intent}. Battery:${context.battery}%. Goal:${instruction}`;
 
-                const fullPrompt = `<|im_start|>system\n${systemPrompt}<|im_end|>\n` + 
-                    messages.map(m => `<|im_start|>${m.role}\n${m.content}<|im_end|>`).join('\n') +
+                const fullPrompt = `<|im_start|>system\n${systemPrompt}. Rule: ONE suggestion, <15 words, NO preamble.<|im_end|>\n` + 
+                    messages.map(m => `<|im_start|>user\n${m.content}<|im_end|>`).join('\n') +
                     '\n<|im_start|>assistant\n';
 
                 const output = await llmPipeline(fullPrompt, {
-                    max_new_tokens: 32, // Reduced from 48 for speed
-                    temperature: 0.6, // Slightly lower for more stability
+                    max_new_tokens: 24, // Optimized from 32 for speed
+                    temperature: 0.6,
                     do_sample: true,
                     top_k: 40,
                     return_full_text: false,
