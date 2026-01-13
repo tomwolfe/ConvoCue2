@@ -2,6 +2,7 @@ export const PARETO_PERSONAS = {
     anxiety: {
         label: 'Anxiety Coach',
         icon: 'ShieldAlert',
+        drainRate: 1.5,
         prompt: `You are a warm, supportive social coach for someone with social anxiety. 
         Focus: Provide low-pressure, validating cues that bridge silence or offer easy exits. 
         - If SOCIAL: Suggest a simple, open-ended question.
@@ -12,6 +13,7 @@ export const PARETO_PERSONAS = {
     professional: {
         label: 'Pro Exec',
         icon: 'Briefcase',
+        drainRate: 1.0,
         prompt: `You are a high-level executive coach for a busy professional. 
         Focus: Project confidence, clarity, and strategic alignment. 
         - If PROFESSIONAL: Focus on 'next steps' or 'key takeaways'.
@@ -22,6 +24,7 @@ export const PARETO_PERSONAS = {
     relationship: {
         label: 'EQ Coach',
         icon: 'Heart',
+        drainRate: 0.8,
         prompt: `You are an expert in Emotional Intelligence and deep connection. 
         Focus: Deepen connection, validation, and emotional labeling.
         - If EMPATHY: Use 'I' statements or validate the other person's feeling.
@@ -32,6 +35,7 @@ export const PARETO_PERSONAS = {
     crosscultural: {
         label: 'Culture Guide',
         icon: 'Globe',
+        drainRate: 1.2,
         prompt: `You are a cross-cultural communication expert. 
         Focus: Navigate high/low context differences and save face.
         - If SOCIAL: Suggest inclusive, clear language.

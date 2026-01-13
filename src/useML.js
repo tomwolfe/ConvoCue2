@@ -24,7 +24,7 @@ export const useML = () => {
         setDetectedIntent(intent);
         setIsProcessing(true);
         
-        const currentBattery = deduct(text, intent);
+        const currentBattery = deduct(text, intent, persona);
         addEntry(text);
 
         messagesRef.current.push({ role: 'user', content: text });

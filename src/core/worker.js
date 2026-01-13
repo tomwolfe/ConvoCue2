@@ -5,7 +5,10 @@ env.useBrowserCache = true;
 
 // Ensure wasmPaths has a trailing slash and point to root
 env.backends.onnx.wasm.wasmPaths = "/";
-env.backends.onnx.wasm.numThreads = 1; // Disable multi-threading for better compatibility if SharedArrayBuffer is not available
+
+// Dynamically set threads based on availability, capped at 4 for stability in browser
+const numThreads = Math.min(4, Math.max(1, (self.navigator.hardwareConcurrency || 2) - 1));
+env.backends.onnx.wasm.numThreads = numThreads;
 
 let sttPipeline = null;
 let llmPipeline = null;
@@ -75,8 +78,8 @@ async function handleSTT(audio, taskId) {
     }
 
     const result = await sttPipeline(audio, {
-        chunk_length_s: 30,
-        stride_length_s: 5,
+        chunk_length_s: 15, // Faster processing for shorter snippets
+        stride_length_s: 2,
     });
 
     self.postMessage({ type: 'stt_result', text: result.text, taskId });

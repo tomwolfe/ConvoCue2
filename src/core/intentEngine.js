@@ -33,10 +33,30 @@ const INTENT_PATTERNS = {
     }
 };
 
+// Pre-compile regex for performance and accuracy (word boundaries)
+const COMPILED_PATTERNS = Object.entries(INTENT_PATTERNS).map(([intent, config]) => {
+    // Escape keywords and join with word boundaries
+    const pattern = config.keywords
+        .map(kw => {
+            const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return `\\b${escaped}\\b`;
+        })
+        .join('|');
+    return {
+        intent,
+        regex: new RegExp(pattern, 'gi'),
+        weight: config.weight
+    };
+});
+
+const NUANCE_PATTERNS = [
+    { regex: /\b(sorry but|sorry, but|i hear you but)\b/gi, conflict: 2.5, empathy: -1 },
+    { regex: /\b(not sure|maybe|perhaps)\b/gi, social: 0.5 }
+];
+
 export const detectIntent = (text) => {
-    if (!text || text.length < 3) return 'general';
+    if (!text || text.trim().length < 3) return 'general';
     
-    const lowerText = text.toLowerCase();
     const scores = {
         social: 0,
         professional: 0,
@@ -44,29 +64,29 @@ export const detectIntent = (text) => {
         empathy: 0
     };
 
-    // Check keywords and phrases
-    for (const [intent, config] of Object.entries(INTENT_PATTERNS)) {
-        config.keywords.forEach(kw => {
-            if (lowerText.includes(kw)) {
+    // Check pre-compiled patterns
+    for (const { intent, regex, weight } of COMPILED_PATTERNS) {
+        const matches = text.match(regex);
+        if (matches) {
+            matches.forEach(match => {
                 // Higher weight for multi-word phrase matches
-                const multiplier = kw.includes(' ') ? 1.5 : 1;
-                scores[intent] += config.weight * multiplier;
+                const multiplier = match.includes(' ') ? 1.5 : 1;
+                scores[intent] += weight * multiplier;
+            });
+        }
+    }
+
+    // Apply nuance adjustments
+    for (const { regex, ...adjustments } of NUANCE_PATTERNS) {
+        if (regex.test(text)) {
+            for (const [intent, adjustment] of Object.entries(adjustments)) {
+                scores[intent] += adjustment;
             }
-        });
-    }
-
-    // Special cases for nuanced detection
-    if (/\b(sorry but|sorry, but|i hear you but)\b/.test(lowerText)) {
-        scores.conflict += 2.5;
-        scores.empathy -= 1;
-    }
-
-    if (/\b(not sure|maybe|perhaps)\b/.test(lowerText)) {
-        scores.social += 0.5; // Softening language
+        }
     }
 
     let bestIntent = 'general';
-    let maxScore = 0.8; // Slightly higher threshold to avoid jitter
+    let maxScore = 0.8; // Baseline threshold to avoid noise
 
     for (const [intent, score] of Object.entries(scores)) {
         if (score > maxScore) {

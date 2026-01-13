@@ -9,11 +9,16 @@ export const useSocialBattery = () => {
         batteryRef.current = battery;
     }, [battery]);
 
-    const deduct = useCallback((text, intent) => {
+    const deduct = useCallback((text, intent, personaKey = 'anxiety') => {
         const wordCount = text.trim().split(/\s+/).length;
         const baseDeduction = wordCount * AppConfig.batteryDeduction.baseRate;
         const multiplier = AppConfig.batteryDeduction.multipliers[intent] || 1.0;
-        const totalDeduction = Math.min(15, Math.max(2, baseDeduction * multiplier));
+        
+        // Apply persona-specific drain rate
+        const personaConfig = AppConfig.personas[personaKey] || AppConfig.personas[AppConfig.defaultPersona];
+        const drainRate = personaConfig.drainRate || 1.0;
+        
+        const totalDeduction = Math.min(15, Math.max(2, baseDeduction * multiplier * drainRate));
         
         setBattery(prev => {
             const newVal = Math.max(0, prev - totalDeduction);
