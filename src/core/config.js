@@ -107,6 +107,15 @@ export const PARETO_PERSONAS = {
     }
 };
 
+export const BRIDGE_PHRASES = {
+    social: "Finding a warm response...",
+    professional: "Drafting a professional reply...",
+    conflict: "De-escalating the situation...",
+    empathy: "Finding the right supportive words...",
+    positive: "Acknowledging that great point...",
+    general: "Thinking..."
+};
+
 export const AppConfig = {
     personas: PARETO_PERSONAS,
     defaultPersona: 'anxiety',

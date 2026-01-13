@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { detectIntent, shouldGenerateSuggestion } from './core/intentEngine';
-import { AppConfig } from './core/config';
+import { AppConfig, BRIDGE_PHRASES } from './core/config';
 import { useSocialBattery } from './hooks/useSocialBattery';
 import { useTranscript } from './hooks/useTranscript';
 
@@ -115,6 +115,8 @@ export const useML = () => {
             return;
         }
 
+        // Instant reaction to reduce perceived latency
+        setSuggestion(BRIDGE_PHRASES[intent] || BRIDGE_PHRASES.general);
         setIsProcessing(true);
         const personaConfig = AppConfig.personas[persona];
         const taskId = ++lastTaskId.current;

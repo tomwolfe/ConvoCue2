@@ -56,20 +56,20 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, i
                 </button>
             </div>
             
-            <div className="suggestion-box">
+            <div className={`suggestion-box ${isProcessing ? 'is-processing' : ''}`}>
                 {suggestion || (isProcessing ? "Orchestrating persona response..." : "Suggestions will appear here based on your conversation.")}
             </div>
 
-            <div className="quick-actions-container">
+            <div className={`quick-actions-container ${isExhausted ? 'priority-exhaustion' : ''}`}>
                 <div className="quick-actions-label">
                     <Zap size={10} />
-                    <span>Quick Responses</span>
+                    <span>{isExhausted ? 'Suggested Exit Strategies' : 'Quick Responses'}</span>
                 </div>
                 <div className="quick-actions-list">
                     {actions.map((action, i) => (
                         <button 
                             key={i} 
-                            className={`quick-action-btn ${copied === i ? 'copied' : ''}`}
+                            className={`quick-action-btn ${copied === i ? 'copied' : ''} ${isExhausted ? 'large-action' : ''}`}
                             onClick={() => handleQuickAction(action.text, i)}
                         >
                             {copied === i ? <ClipboardCheck size={12} /> : <Zap size={12} style={{ opacity: 0.6 }} />}

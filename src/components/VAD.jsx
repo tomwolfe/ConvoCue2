@@ -19,6 +19,12 @@ const VAD = ({ onSpeechEnd, isReady, status }) => {
         onnxWASMPaths: "/",
     });
 
+    React.useEffect(() => {
+        if (isReady && !vad.listening && !vad.loading && !vadError) {
+            vad.start();
+        }
+    }, [isReady, vad.loading, vadError]);
+
 
     const toggleMic = () => {
         if (vad.listening) {

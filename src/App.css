@@ -898,3 +898,33 @@ footer {
     background: rgba(255,255,255,0.05);
     color: var(--text);
 }
+
+/* 80/20 Optimizations */
+.suggestion-box.is-processing {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.priority-exhaustion .quick-actions-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+.quick-action-btn.large-action {
+    padding: 1rem;
+    font-size: 0.95rem;
+    justify-content: center;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.quick-action-btn.large-action:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.priority-exhaustion .quick-actions-label {
+    color: var(--accent-red);
+    font-size: 0.7rem;
+}
