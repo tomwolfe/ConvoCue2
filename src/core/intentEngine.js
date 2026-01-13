@@ -1,37 +1,4 @@
-const INTENT_PATTERNS = {
-    social: {
-        keywords: [
-            'hello', 'hi', 'how are you', 'nice to meet', 'weather', 'party', 'weekend', 
-            'name', 'thanks', 'cool', 'awesome', 'fun', 'plans', 'hobbies', 'family',
-            'vacation', 'trip', 'recommend', 'favorite'
-        ],
-        weight: 1
-    },
-    professional: {
-        keywords: [
-            'project', 'meeting', 'deadline', 'report', 'client', 'strategy', 'goal', 
-            'agenda', 'update', 'feedback', 'workflow', 'resource', 'budget', 'roadmap',
-            'stakeholder', 'quarterly', 'deliverable', 'action item', 'sync', 'call'
-        ],
-        weight: 1.2
-    },
-    conflict: {
-        keywords: [
-            'disagree', 'wrong', 'mistake', 'fail', 'issue', 'problem', 'not true', 
-            'but', 'actually', 'unacceptable', 'frustrated', 'no way', 'impossible',
-            'refuse', 'blame', 'error', 'delay', 'broken', 'unfair', 'uncomfortable'
-        ],
-        weight: 1.5
-    },
-    empathy: {
-        keywords: [
-            'understand', 'feel', 'difficult', 'hard', 'support', 'help', 'sorry to hear', 
-            'bummer', 'that sucks', 'tough', 'exhausting', 'sorry', 'apologize', 
-            'listen', 'there for you', 'hear you', 'valid', 'mean a lot'
-        ],
-        weight: 1.3
-    }
-};
+import { INTENT_PATTERNS } from './config';
 
 // Pre-compile regex for performance and accuracy (word boundaries)
 const COMPILED_PATTERNS = Object.entries(INTENT_PATTERNS).map(([intent, config]) => {
@@ -51,7 +18,9 @@ const COMPILED_PATTERNS = Object.entries(INTENT_PATTERNS).map(([intent, config])
 
 const NUANCE_PATTERNS = [
     { regex: /\b(sorry but|sorry, but|i hear you but)\b/gi, conflict: 2.5, empathy: -1 },
-    { regex: /\b(not sure|maybe|perhaps)\b/gi, social: 0.5 }
+    { regex: /\b(not sure|maybe|perhaps)\b/gi, social: 0.5 },
+    // Negation check: if "don't disagree" or "no problem", reduce conflict
+    { regex: /\b(don't|do not|doesn't|does not|no|not)\s+\b(disagree|wrong|problem|issue|mistake)\b/gi, conflict: -3 }
 ];
 
 export const detectIntent = (text) => {
@@ -78,10 +47,13 @@ export const detectIntent = (text) => {
 
     // Apply nuance adjustments
     for (const { regex, ...adjustments } of NUANCE_PATTERNS) {
-        if (regex.test(text)) {
-            for (const [intent, adjustment] of Object.entries(adjustments)) {
-                scores[intent] += adjustment;
-            }
+        const matches = text.match(regex);
+        if (matches) {
+            matches.forEach(() => {
+                for (const [intent, adjustment] of Object.entries(adjustments)) {
+                    scores[intent] += adjustment;
+                }
+            });
         }
     }
 

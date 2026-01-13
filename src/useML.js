@@ -13,7 +13,10 @@ export const useML = () => {
     const [persona, setPersona] = useState(AppConfig.defaultPersona);
     const [isReady, setIsReady] = useState(false);
     
-    const { battery, deduct, reset: resetBattery, batteryRef } = useSocialBattery();
+    const { 
+        battery, deduct, reset: resetBattery, batteryRef,
+        sensitivity, setSensitivity, isPaused, togglePause, recharge
+    } = useSocialBattery();
     const { transcript, addEntry, currentSpeaker, toggleSpeaker } = useTranscript();
 
     const workerRef = useRef(null);
@@ -30,12 +33,25 @@ export const useML = () => {
         messagesRef.current.push({ role: 'user', content: text });
         if (messagesRef.current.length > 10) messagesRef.current.shift();
 
-        let personaPrompt = AppConfig.personas[persona].prompt;
-        const contextInjection = `\n[Context: Intent=${intent.toUpperCase()}, Battery=${Math.round(currentBattery)}%]`;
+        const personaConfig = AppConfig.personas[persona];
+        let personaPrompt = personaConfig.prompt;
+        
+        // Add few-shot examples if available
+        if (personaConfig.examples) {
+            personaPrompt += "\n\nExamples of how you respond:";
+            personaConfig.examples.forEach(ex => {
+                personaPrompt += `\n[Context: ${ex.context}] User: "${ex.input}" -> Suggestion: "${ex.suggestion}"`;
+            });
+        }
+
+        const contextInjection = `\n\n[Current Context: Intent=${intent.toUpperCase()}, Battery=${Math.round(currentBattery)}%]`;
         
         if (currentBattery < AppConfig.minBatteryThreshold) {
-            personaPrompt += "\n[URGENT: User is socially exhausted. Prioritize exit strategies or minimal energy responses.]";
+            personaPrompt += "\n[URGENT: User is socially exhausted. Prioritize exit strategies, boundaries, or minimal energy responses.]";
         }
+
+        // Final Instruction
+        personaPrompt += "\n\nBased on the dialogue above and the current context, provide a single, punchy suggestion for the user's next response. Constraints: Actionable, under 15 words, NO preamble like 'Suggestion:' or 'How about'.";
 
         if (workerRef.current) {
             workerRef.current.postMessage({
@@ -109,6 +125,9 @@ export const useML = () => {
         persona, setPersona, isReady, battery, resetBattery, 
         dismissSuggestion, processAudio,
         isProcessing,
-        currentSpeaker, toggleSpeaker
+        currentSpeaker, toggleSpeaker,
+        sensitivity, setSensitivity, 
+        isPaused, togglePause,
+        recharge
     };
 };

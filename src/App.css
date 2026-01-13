@@ -94,6 +94,101 @@ header h1 span {
     border-radius: 3px;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+}
+
+.battery-paused-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.4);
+    color: white;
+    font-size: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.settings-panel {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(255,255,255,0.05);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.setting-item {
+    margin-bottom: 1rem;
+}
+
+.setting-item label {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.sensitivity-options {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.sensitivity-options button {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid transparent;
+    color: var(--text);
+    padding: 6px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sensitivity-options button.active {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.setting-actions {
+    display: flex;
+    gap: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 1rem;
+}
+
+.btn-secondary {
+    flex: 1;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-muted);
+    padding: 6px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-secondary:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+}
+
+.btn-icon.active {
+    color: var(--primary);
 }
 
 .battery-fill {
@@ -136,13 +231,41 @@ header h1 span {
     color: var(--primary);
 }
 
-.suggestion-hud {
-    background: var(--card);
-    padding: 1.25rem;
-    border-radius: 16px;
-    margin-bottom: 1.5rem;
-    border: 1px solid rgba(255,255,255,0.05);
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+.intent-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.exhausted-badge {
+    background-color: var(--accent-red) !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.suggestion-hud.exhausted {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: linear-gradient(to bottom right, var(--card), rgba(239, 68, 68, 0.05));
+}
+
+.suggestion-box {
+    font-size: 1.15rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--text);
 }
 
 .transcript-container {

@@ -39,10 +39,16 @@ const App = () => {
         processAudio,
         isProcessing,
         currentSpeaker,
-        toggleSpeaker
+        toggleSpeaker,
+        sensitivity, 
+        setSensitivity, 
+        isPaused, 
+        togglePause,
+        recharge
     } = useML();
 
     const [showTutorial, setShowTutorial] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
 
     return (
         <div className="app">
@@ -52,22 +58,49 @@ const App = () => {
                     <button className="btn-icon" onClick={() => setShowTutorial(true)} title="How it works">
                         <Info size={18} />
                     </button>
+                    <button className={`btn-icon ${showSettings ? 'active' : ''}`} onClick={() => setShowSettings(!showSettings)} title="Settings">
+                        <RotateCcw size={18} style={{ transform: showSettings ? 'rotate(-90deg)' : 'none', transition: 'transform 0.3s' }} />
+                    </button>
                 </div>
                 <div className="header-right">
-                    <div className="battery-section" onClick={resetBattery} title="Social Battery - Click to Reset">
-                        <div className="battery-label">
-                            <Battery size={14} />
+                    <div className="battery-section" title="Social Battery">
+                        <div className="battery-label" onClick={() => recharge(10)}>
+                            {isPaused ? <Info size={14} className="paused-icon" /> : <Battery size={14} />}
                             <span>{Math.round(battery)}%</span>
                         </div>
-                        <div className="battery-hud">
+                        <div className="battery-hud" onClick={togglePause}>
                             <div className="battery-fill" style={{ 
                                 width: `${battery}%`, 
-                                backgroundColor: battery < 20 ? '#ef4444' : battery < 50 ? '#f59e0b' : '#10b981' 
+                                backgroundColor: isPaused ? '#94a3b8' : battery < 20 ? '#ef4444' : battery < 50 ? '#f59e0b' : '#10b981' 
                             }}></div>
+                            {isPaused && <div className="battery-paused-overlay">PAUSED</div>}
                         </div>
                     </div>
                 </div>
             </header>
+
+            {showSettings && (
+                <div className="settings-panel">
+                    <div className="setting-item">
+                        <label>Battery Sensitivity</label>
+                        <div className="sensitivity-options">
+                            {AppConfig.agency.sensitivityOptions.map(opt => (
+                                <button 
+                                    key={opt.value}
+                                    className={sensitivity === opt.value ? 'active' : ''}
+                                    onClick={() => setSensitivity(opt.value)}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="setting-actions">
+                        <button className="btn-secondary" onClick={resetBattery}>Full Reset</button>
+                        <button className="btn-secondary" onClick={togglePause}>{isPaused ? 'Resume Drain' : 'Snooze Drain'}</button>
+                    </div>
+                </div>
+            )}
 
             <div className="persona-nav">
                 {Object.entries(AppConfig.personas).map(([id, p]) => (
@@ -88,6 +121,7 @@ const App = () => {
                     intent={detectedIntent} 
                     onDismiss={dismissSuggestion} 
                     isProcessing={isProcessing}
+                    battery={battery}
                 />
                 
                 <div className="transcript-container">
