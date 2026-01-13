@@ -69,7 +69,7 @@ const App = () => {
                             <span>{Math.round(battery)}%</span>
                         </div>
                         <div className="battery-hud" onClick={togglePause}>
-                            <div className="battery-fill" style={{ 
+                            <div className={`battery-fill ${battery < 20 && !isPaused ? 'critical' : ''}`} style={{ 
                                 width: `${battery}%`, 
                                 backgroundColor: isPaused ? '#94a3b8' : battery < 20 ? '#ef4444' : battery < 50 ? '#f59e0b' : '#10b981' 
                             }}></div>

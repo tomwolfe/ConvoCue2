@@ -35,7 +35,9 @@ export const useSocialBattery = () => {
         lastInteractionRef.current = now;
 
         const wordCount = text.trim().split(/\s+/).length;
-        const baseDeduction = wordCount * AppConfig.batteryDeduction.baseRate;
+        // Use a slight dampening on word count to be more natural (logarithmic-ish)
+        const adjustedWordCount = Math.sqrt(wordCount) * 2; 
+        const baseDeduction = adjustedWordCount * AppConfig.batteryDeduction.baseRate;
         const multiplier = AppConfig.batteryDeduction.multipliers[intent] || 1.0;
         
         const personaConfig = AppConfig.personas[personaKey] || AppConfig.personas[AppConfig.defaultPersona];

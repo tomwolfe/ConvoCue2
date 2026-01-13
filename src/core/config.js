@@ -21,7 +21,7 @@ export const INTENT_PATTERNS = {
             'disagree', 'wrong', 'mistake', 'fail', 'issue', 'problem', 'not true', 
             'but', 'actually', 'unacceptable', 'frustrated', 'no way', 'impossible',
             'refuse', 'blame', 'error', 'delay', 'broken', 'unfair', 'uncomfortable',
-            'nonsense', 'ridiculous', 'offended', 'annoyed'
+            'nonsense', 'ridiculous', 'offended', 'annoyed', 'hate', 'stupid', 'stop'
         ],
         weight: 1.5
     },
@@ -30,7 +30,7 @@ export const INTENT_PATTERNS = {
             'understand', 'feel', 'difficult', 'hard', 'support', 'help', 'sorry to hear', 
             'bummer', 'that sucks', 'tough', 'exhausting', 'sorry', 'apologize', 
             'listen', 'there for you', 'hear you', 'valid', 'mean a lot', 'appreciate',
-            'supportive', 'kind', 'brave'
+            'supportive', 'kind', 'brave', 'tired', 'drained', 'burned out', 'rough'
         ],
         weight: 1.3
     }

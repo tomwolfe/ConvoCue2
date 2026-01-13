@@ -33,7 +33,8 @@ export const useML = () => {
         const currentBattery = deduct(text, intent, persona);
         addEntry(text);
 
-        messagesRef.current.push({ role: 'user', content: text });
+        const speakerLabel = currentSpeaker === 'me' ? 'Me' : 'Them';
+        messagesRef.current.push({ role: 'user', content: `${speakerLabel}: ${text}` });
         if (messagesRef.current.length > 10) messagesRef.current.shift();
 
         const personaConfig = AppConfig.personas[persona];

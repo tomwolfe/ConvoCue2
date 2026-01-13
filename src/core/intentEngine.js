@@ -1,4 +1,4 @@
-import { INTENT_PATTERNS } from './config';
+import { INTENT_PATTERNS } from './config.js';
 
 // Pre-compile regex for performance and accuracy (word boundaries)
 const COMPILED_PATTERNS = Object.entries(INTENT_PATTERNS).map(([intent, config]) => {
