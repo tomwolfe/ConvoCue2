@@ -5,18 +5,19 @@ import VAD from './components/VAD';
 import SuggestionHUD from './components/SuggestionHUD';
 import SessionSummary from './components/SessionSummary';
 import { AppConfig } from './core/config';
-import { 
-    ShieldAlert, 
-    Briefcase, 
-    Heart, 
-    Globe, 
-    Info, 
-    User, 
-    Users, 
-    Battery, 
+import {
+    ShieldAlert,
+    Briefcase,
+    Heart,
+    Globe,
+    Info,
+    User,
+    Users,
+    Battery,
     RotateCcw,
     ChevronRight,
-    LogOut
+    LogOut,
+    Sparkles
 } from 'lucide-react';
 
 const ICON_MAP = {
