@@ -9,21 +9,62 @@ export const useML = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [detectedIntent, setDetectedIntent] = useState('general');
     const [persona, setPersona] = useState(AppConfig.defaultPersona);
+    const [sessionSummary, setSessionSummary] = useState(null);
+    const [isSummarizing, setIsSummarizing] = useState(false);
+    const [summaryError, setSummaryError] = useState(null);
     
     const { 
         battery, deduct, reset: resetBattery, batteryRef,
         sensitivity, setSensitivity, isPaused, togglePause, recharge, isExhausted
     } = useSocialBattery();
-    const { transcript, addEntry, currentSpeaker, toggleSpeaker } = useTranscript();
+    const { transcript, addEntry, currentSpeaker, toggleSpeaker, clearTranscript } = useTranscript();
 
     const sttWorkerRef = useRef(null);
     const llmWorkerRef = useRef(null);
     const messagesRef = useRef([]);
+    const initialBatteryRef = useRef(100);
     const lastTaskId = useRef(0);
     const [sttReady, setSttReady] = useState(false);
     const [llmReady, setLlmReady] = useState(false);
     const [sttProgress, setSttProgress] = useState(0);
     const [llmProgress, setLlmProgress] = useState(0);
+
+    const summarizeSession = useCallback(() => {
+        if (!llmWorkerRef.current || transcript.length === 0) return;
+        
+        setIsSummarizing(true);
+        setSummaryError(null);
+        const stats = {
+            totalCount: transcript.length,
+            meCount: transcript.filter(t => t.speaker === 'me').length,
+            themCount: transcript.filter(t => t.speaker === 'them').length,
+            totalDrain: Math.round(initialBatteryRef.current - battery)
+        };
+
+        llmWorkerRef.current.postMessage({
+            type: 'summarize',
+            taskId: ++lastTaskId.current,
+            data: {
+                transcript,
+                stats
+            }
+        });
+    }, [transcript, battery]);
+
+    const startNewSession = useCallback(() => {
+        setSessionSummary(null);
+        setSummaryError(null);
+        clearTranscript();
+        resetBattery();
+        messagesRef.current = [];
+        initialBatteryRef.current = 100;
+    }, [clearTranscript, resetBattery]);
+
+    const closeSummary = useCallback(() => {
+        setSessionSummary(null);
+        setIsSummarizing(false);
+        setSummaryError(null);
+    }, []);
 
     const processText = useCallback((text) => {
         const intent = detectIntent(text);
@@ -62,7 +103,7 @@ export const useML = () => {
                 }
             });
         }
-    }, [persona, deduct, addEntry]);
+    }, [persona, deduct, addEntry, currentSpeaker]);
 
     const dismissSuggestion = useCallback(() => {
         setSuggestion('');
@@ -93,8 +134,8 @@ export const useML = () => {
         };
 
         llmWorker.onmessage = (event) => {
-            const { type, suggestion: sug, progress, error, taskId } = event.data;
-            if (taskId && taskId < lastTaskId.current && type === 'llm_result') return;
+            const { type, suggestion: sug, summary, progress, error, taskId } = event.data;
+            if (taskId && taskId < lastTaskId.current && (type === 'llm_result' || type === 'summary_result' || type === 'error')) return;
 
             switch (type) {
                 case 'progress': setLlmProgress(progress); break;
@@ -103,7 +144,17 @@ export const useML = () => {
                     setSuggestion(sug);
                     setIsProcessing(false);
                     break;
-                case 'error': console.error('LLM Worker error:', error); break;
+                case 'summary_result':
+                    setSessionSummary(summary);
+                    setIsSummarizing(false);
+                    setSummaryError(null);
+                    break;
+                case 'error': 
+                    console.error('LLM Worker error:', error);
+                    setIsProcessing(false);
+                    setIsSummarizing(false);
+                    setSummaryError(error);
+                    break;
             }
         };
 
@@ -133,6 +184,8 @@ export const useML = () => {
         currentSpeaker, toggleSpeaker,
         sensitivity, setSensitivity, 
         isPaused, togglePause,
-        recharge, isExhausted
+        recharge, isExhausted,
+        summarizeSession, startNewSession, closeSummary, sessionSummary, isSummarizing, summaryError,
+        initialBattery: initialBatteryRef.current
     };
 };

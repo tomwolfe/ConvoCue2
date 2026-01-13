@@ -50,6 +50,43 @@ Focus: ${instruction}`;
                 const suggestion = output[0].generated_text.trim();
                 self.postMessage({ type: 'llm_result', suggestion, taskId });
                 break;
+
+            case 'summarize':
+                if (!llmPipeline) throw new Error('LLM model not loaded');
+                const { transcript, stats } = data;
+                
+                const transcriptText = transcript
+                    .map(t => `[${t.speaker.toUpperCase()}] ${t.text}`)
+                    .join('\n');
+
+                const summaryPrompt = `Analyze this conversation transcript and stats to provide a concise social battery summary.
+Stats:
+- Total Messages: ${stats.totalCount}
+- My Messages: ${stats.meCount}
+- Their Messages: ${stats.themCount}
+- Battery Drain: ${stats.totalDrain}%
+
+Transcript:
+${transcriptText}
+
+Output exactly 3 bullet points:
+1. **Reflection**: A one-sentence insight into the conversation's tone.
+2. **Energy Drain**: Why it was taxing (e.g., one-sided, high conflict, long).
+3. **Tip**: One specific social skill tip for next time.
+Tone: Supportive, clinical yet empathetic. Max 80 words total.`;
+
+                const summaryFullPrompt = `<|im_start|>system\nYou are an expert social intelligence analyst. Provide brief, structured feedback.<|im_end|>\n<|im_start|>user\n${summaryPrompt}<|im_end|>\n<|im_start|>assistant\n`;
+
+                const summaryOutput = await llmPipeline(summaryFullPrompt, {
+                    max_new_tokens: 150,
+                    temperature: 0.5,
+                    do_sample: true,
+                    return_full_text: false,
+                });
+
+                const summary = summaryOutput[0].generated_text.trim();
+                self.postMessage({ type: 'summary_result', summary, taskId });
+                break;
         }
     } catch (error) {
         self.postMessage({ type: 'error', error: error.message, taskId });

@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { useML } from './useML';
 import VAD from './components/VAD';
 import SuggestionHUD from './components/SuggestionHUD';
+import SessionSummary from './components/SessionSummary';
 import { AppConfig } from './core/config';
 import { 
     ShieldAlert, 
@@ -14,7 +15,8 @@ import {
     Users, 
     Battery, 
     RotateCcw,
-    ChevronRight
+    ChevronRight,
+    LogOut
 } from 'lucide-react';
 
 const ICON_MAP = {
@@ -45,8 +47,15 @@ const App = () => {
         setSensitivity, 
         isPaused, 
         togglePause,
-        recharge,
-        isExhausted
+        recharge, 
+        isExhausted,
+        summarizeSession,
+        startNewSession,
+        closeSummary,
+        sessionSummary,
+        isSummarizing,
+        summaryError,
+        initialBattery
     } = useML();
 
     const [showTutorial, setShowTutorial] = useState(false);
@@ -65,6 +74,14 @@ const App = () => {
                     </button>
                 </div>
                 <div className="header-right">
+                    <button 
+                        className="btn-end-session" 
+                        onClick={summarizeSession}
+                        disabled={transcript.length === 0 || isSummarizing}
+                    >
+                        <LogOut size={14} />
+                        <span>{isSummarizing ? 'Summarizing...' : 'End Session'}</span>
+                    </button>
                     <div className="battery-section" title="Social Battery">
                         <div className="battery-label" onClick={() => recharge(10)}>
                             {isPaused ? <Info size={14} className="paused-icon" /> : <Battery size={14} />}
@@ -80,6 +97,19 @@ const App = () => {
                     </div>
                 </div>
             </header>
+
+            {(isSummarizing || sessionSummary || summaryError) && (
+                <SessionSummary 
+                    summary={sessionSummary} 
+                    transcript={transcript} 
+                    battery={battery} 
+                    initialBattery={initialBattery}
+                    onNewSession={startNewSession} 
+                    error={summaryError}
+                    onRetry={summarizeSession}
+                    onClose={closeSummary}
+                />
+            )}
 
             {showSettings && (
                 <div className="settings-panel">
