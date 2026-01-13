@@ -11,7 +11,7 @@ export const useTranscript = () => {
         setTimeout(() => setShouldPulse(false), 2000);
     }, []);
 
-    const addEntry = useCallback((text, speaker = currentSpeaker) => {
+    const addEntry = useCallback((text, speaker = currentSpeaker, intent = null) => {
         setTranscript(prev => {
             const lastEntry = prev[prev.length - 1];
             if (lastEntry && lastEntry.speaker === speaker) {
@@ -19,11 +19,12 @@ export const useTranscript = () => {
             } else {
                 setConsecutiveCount(1);
             }
-            
-            return [...prev, { 
-                text, 
-                speaker, 
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+
+            return [...prev, {
+                text,
+                speaker,
+                intent,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }];
         });
     }, [currentSpeaker]);

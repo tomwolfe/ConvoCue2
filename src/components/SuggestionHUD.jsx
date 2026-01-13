@@ -52,6 +52,12 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, i
                             <span>Low Battery</span>
                         </div>
                     )}
+                    {battery < 30 && !isExhausted && (
+                        <div className="intent-badge battery-tip-badge">
+                            <Zap size={12} />
+                            <span>Take a break to recharge</span>
+                        </div>
+                    )}
                 </div>
                 <button
                     onClick={onDismiss}

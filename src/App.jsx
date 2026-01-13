@@ -28,17 +28,17 @@ const ICON_MAP = {
 };
 
 const App = () => {
-    const { 
-        status, 
-        progress, 
+    const {
+        status,
+        progress,
         sttProgress,
         llmProgress,
-        transcript, 
-        suggestion, 
-        detectedIntent, 
-        persona, 
-        setPersona, 
-        isReady, 
+        transcript,
+        suggestion,
+        detectedIntent,
+        persona,
+        setPersona,
+        isReady,
         battery,
         lastDrain,
         resetBattery,
@@ -49,11 +49,11 @@ const App = () => {
         toggleSpeaker,
         shouldPulse,
         consecutiveCount,
-        sensitivity, 
-        setSensitivity, 
-        isPaused, 
+        sensitivity,
+        setSensitivity,
+        isPaused,
         togglePause,
-        recharge, 
+        recharge,
         isExhausted,
         summarizeSession,
         startNewSession,
@@ -61,7 +61,8 @@ const App = () => {
         sessionSummary,
         isSummarizing,
         summaryError,
-        initialBattery
+        initialBattery,
+        progressiveReadiness
     } = useML();
 
     const [showTutorial, setShowTutorial] = useState(false);
@@ -80,8 +81,8 @@ const App = () => {
                     </button>
                 </div>
                 <div className="header-right">
-                    <button 
-                        className={`btn-end-session ${(isExhausted && transcript.length > 5) ? 'pulse-urgent' : ''}`} 
+                    <button
+                        className={`btn-end-session ${(isExhausted && transcript.length > 5) ? 'pulse-urgent' : ''}`}
                         onClick={summarizeSession}
                         disabled={transcript.length === 0 || isSummarizing}
                     >
@@ -104,6 +105,22 @@ const App = () => {
                                     {lastDrain.amount}% {lastDrain.reason && <span className="drain-reason">{lastDrain.reason}</span>}
                                 </div>
                             )}
+                        </div>
+                        {/* Battery Explanation Tooltip */}
+                        <div className="battery-explanation-tooltip">
+                            <div className="tooltip-trigger">?</div>
+                            <div className="tooltip-content">
+                                <h4>How Social Battery Works</h4>
+                                <p>Every interaction drains your social energy:</p>
+                                <ul>
+                                    <li><strong>Conflict</strong>: Drains most energy</li>
+                                    <li><strong>Work discussions</strong>: Moderate drain</li>
+                                    <li><strong>Emotional topics</strong>: Moderate drain</li>
+                                    <li><strong>Casual conversation</strong>: Low drain</li>
+                                    <li><strong>Positive interactions</strong>: Recharge!</li>
+                                </ul>
+                                <p>Take breaks to let your battery recover.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -196,6 +213,11 @@ const App = () => {
                                     </span>
                                     <span className="entry-text">{entry.text}</span>
                                     <span className="entry-time">{entry.timestamp}</span>
+                                    {entry.intent && (
+                                        <span className="entry-intent" title={`This interaction was categorized as ${entry.intent}`}>
+                                            {entry.intent}
+                                        </span>
+                                    )}
                                 </div>
                             ))
                         )}
@@ -208,6 +230,7 @@ const App = () => {
                     onSpeechEnd={processAudio}
                     isReady={isReady}
                     status={status}
+                    progressiveReadiness={progressiveReadiness}
                 />
                 {(status.includes('Loading') || status.includes('models')) && (
                     <div className="model-loading">
@@ -273,6 +296,14 @@ const App = () => {
                             <div className="step-content">
                                 <h4>Social Battery</h4>
                                 <p>Cues drain your battery based on intensity. Low battery triggers "Exhaustion" mode for easier exits. Your battery recovers when conversations pause.</p>
+                                <p><strong>Drain Levels:</strong></p>
+                                <ul>
+                                    <li>Conflict: Highest drain</li>
+                                    <li>Work discussions: Moderate drain</li>
+                                    <li>Emotional topics: Moderate drain</li>
+                                    <li>Casual conversation: Low drain</li>
+                                    <li>Positive interactions: Recharge!</li>
+                                </ul>
                                 <p><strong>Example:</strong> Saying "I'm not sure about that" drains less than "I strongly disagree" (conflict).</p>
                             </div>
                         </div>

@@ -2,7 +2,7 @@ import React from 'react';
 import { useMicVAD } from '@ricky0123/vad-react';
 import { Mic, MicOff, Loader2, AlertTriangle, RotateCcw, Settings, Chrome, Globe, Apple } from 'lucide-react';
 
-const VAD = ({ onSpeechEnd, isReady, status }) => {
+const VAD = ({ onSpeechEnd, isReady, status, progressiveReadiness }) => {
     const [vadError, setVadError] = React.useState(null);
     const [permissionDenied, setPermissionDenied] = React.useState(false);
     const [showDetailedHelp, setShowDetailedHelp] = React.useState(false);
@@ -34,10 +34,12 @@ const VAD = ({ onSpeechEnd, isReady, status }) => {
     });
 
     React.useEffect(() => {
-        if (isReady && !vad.listening && !vad.loading && !vadError) {
+        // Allow VAD to start when STT is ready (partial functionality) or both are ready (full functionality)
+        if ((progressiveReadiness === 'partial' || progressiveReadiness === 'full') &&
+            !vad.listening && !vad.loading && !vadError) {
             vad.start();
         }
-    }, [isReady, vad.loading, vadError]);
+    }, [progressiveReadiness, vad.loading, vadError]);
 
     const requestPermission = () => {
         setPermissionDenied(false);
@@ -116,14 +118,14 @@ const VAD = ({ onSpeechEnd, isReady, status }) => {
         <div className="vad-controls">
             <button
                 onClick={toggleMic}
-                disabled={!isReady || permissionDenied}
+                disabled={(!isReady && progressiveReadiness !== 'partial') || permissionDenied}
                 className={`btn-mic ${vad.listening ? 'active' : ''} ${permissionDenied ? 'permission-denied' : ''}`}
             >
                 {vad.listening ? <Mic size={24} /> : <MicOff size={24} />}
                 <span>{vad.listening ? 'Listening...' : permissionDenied ? 'Permission Denied' : 'Start Listening'}</span>
             </button>
             <div className="status-indicator">
-                {(status === 'Loading Models...' || status === 'Processing...') && <Loader2 className="animate-spin" size={16} />}
+                {(status.includes('Loading') || status.includes('models')) && <Loader2 className="animate-spin" size={16} />}
                 {vadError && (
                     <div className="error-container">
                         <AlertTriangle size={16} className="error-icon" />

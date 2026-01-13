@@ -116,9 +116,36 @@ export const useSocialBattery = () => {
             totalDeduction = 0.2;
         }
 
+        // Create more descriptive drain reasons for better user understanding
+        let detailedReason = '';
+        if (intent !== 'general') {
+            switch (intent) {
+                case 'conflict':
+                    detailedReason = 'Conflict detected';
+                    break;
+                case 'professional':
+                    detailedReason = 'Work discussion';
+                    break;
+                case 'empathy':
+                    detailedReason = 'Emotional topic';
+                    break;
+                case 'social':
+                    detailedReason = 'Casual conversation';
+                    break;
+                case 'positive':
+                    detailedReason = 'Positive interaction';
+                    break;
+                default:
+                    detailedReason = intent;
+            }
+        }
+
         setLastDrain({
             amount: isPositive ? `+${Math.abs(totalDeduction).toFixed(1)}` : `-${totalDeduction.toFixed(1)}`,
-            reason: intent !== 'general' ? intent : ''
+            reason: detailedReason,
+            intent: intent,
+            wordCount: Math.round(adjustedWordCount),
+            multiplier: multiplier.toFixed(1)
         });
 
         if (drainTimeoutRef.current) clearTimeout(drainTimeoutRef.current);

@@ -102,7 +102,7 @@ export const useML = () => {
         setDetectedIntent(intent);
 
         const currentBattery = deduct(text, intent, persona);
-        addEntry(text);
+        addEntry(text, currentSpeaker, intent);
         nudgeSpeaker();
 
         const speakerLabel = currentSpeaker === 'me' ? 'Me' : 'Them';
@@ -185,7 +185,7 @@ export const useML = () => {
         });
     }, []);
 
-    // Improved model loading status
+    // Improved model loading status with progressive enhancement
     const getModelLoadStatus = () => {
         if (!sttReady && !llmReady) {
             if (sttProgress < 100 && llmProgress < 100) {
@@ -199,6 +199,13 @@ export const useML = () => {
         if (!sttReady) return 'Loading speech-to-text model...';
         if (!llmReady) return 'Loading language model...';
         return 'Ready';
+    };
+
+    // Progressive readiness: STT ready = basic functionality, both ready = full functionality
+    const getProgressiveReadiness = () => {
+        if (sttReady && llmReady) return 'full';
+        if (sttReady) return 'partial'; // STT ready = can transcribe, no suggestions yet
+        return 'loading';
     };
 
     useEffect(() => {
@@ -254,19 +261,20 @@ export const useML = () => {
     }, []);
 
     const isReady = sttReady && llmReady;
+    const progressiveReadiness = getProgressiveReadiness();
     const progress = (sttProgress + llmProgress) / 2;
     const status = !isReady ? getModelLoadStatus() : isProcessing ? 'Processing...' : 'Ready';
 
     const processAudio = useCallback((audioData) => {
         if (!sttReady || !sttWorkerRef.current) return;
-        
+
         audioBufferRef.current.push(audioData);
-        
+
         if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
-        
+
         const totalLength = audioBufferRef.current.reduce((acc, curr) => acc + curr.length, 0);
         // If buffer > 3s, flush immediately, otherwise wait 300ms for more speech
-        if (totalLength > 48000) { 
+        if (totalLength > 48000) {
             flushAudioBuffer();
         } else {
             flushTimeoutRef.current = setTimeout(flushAudioBuffer, 300);
@@ -280,15 +288,16 @@ export const useML = () => {
     }, []);
 
     return {
-        status, progress, sttProgress, llmProgress, transcript, suggestion, detectedIntent, 
-        persona, setPersona, isReady, battery, resetBattery, 
+        status, progress, sttProgress, llmProgress, transcript, suggestion, detectedIntent,
+        persona, setPersona, isReady, battery, resetBattery,
         dismissSuggestion, processAudio,
         isProcessing,
         currentSpeaker, toggleSpeaker, shouldPulse, consecutiveCount,
-        sensitivity, setSensitivity, 
+        sensitivity, setSensitivity,
         isPaused, togglePause,
         recharge, isExhausted, lastDrain,
         summarizeSession, startNewSession, closeSummary, sessionSummary, isSummarizing, summaryError,
-        initialBattery: initialBatteryRef.current
+        initialBattery: initialBatteryRef.current,
+        progressiveReadiness
     };
 };
