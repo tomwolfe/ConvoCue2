@@ -3,6 +3,12 @@ import { useState, useCallback } from 'react';
 export const useTranscript = () => {
     const [transcript, setTranscript] = useState([]);
     const [currentSpeaker, setCurrentSpeaker] = useState('them');
+    const [shouldPulse, setShouldPulse] = useState(false);
+
+    const nudgeSpeaker = useCallback(() => {
+        setShouldPulse(true);
+        setTimeout(() => setShouldPulse(false), 2000);
+    }, []);
 
     const addEntry = useCallback((text, speaker = currentSpeaker) => {
         setTranscript(prev => [...prev, { 
@@ -18,5 +24,5 @@ export const useTranscript = () => {
 
     const clearTranscript = useCallback(() => setTranscript([]), []);
 
-    return { transcript, addEntry, currentSpeaker, setCurrentSpeaker, toggleSpeaker, clearTranscript };
+    return { transcript, addEntry, currentSpeaker, setCurrentSpeaker, toggleSpeaker, clearTranscript, shouldPulse, nudgeSpeaker };
 };

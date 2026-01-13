@@ -30,6 +30,8 @@ const App = () => {
     const { 
         status, 
         progress, 
+        sttProgress,
+        llmProgress,
         transcript, 
         suggestion, 
         detectedIntent, 
@@ -37,12 +39,14 @@ const App = () => {
         setPersona, 
         isReady, 
         battery,
+        lastDrain,
         resetBattery,
         dismissSuggestion,
         processAudio,
         isProcessing,
         currentSpeaker,
         toggleSpeaker,
+        shouldPulse,
         sensitivity, 
         setSensitivity, 
         isPaused, 
@@ -75,7 +79,7 @@ const App = () => {
                 </div>
                 <div className="header-right">
                     <button 
-                        className="btn-end-session" 
+                        className={`btn-end-session ${(isExhausted && transcript.length > 5) ? 'pulse-urgent' : ''}`} 
                         onClick={summarizeSession}
                         disabled={transcript.length === 0 || isSummarizing}
                     >
@@ -93,6 +97,11 @@ const App = () => {
                                 backgroundColor: isPaused ? '#94a3b8' : isExhausted ? '#ef4444' : battery < 50 ? '#f59e0b' : '#10b981' 
                             }}></div>
                             {isPaused && <div className="battery-paused-overlay">PAUSED</div>}
+                            {lastDrain && (
+                                <div className="drain-indicator animate-float-up">
+                                    -{lastDrain.amount}% {lastDrain.reason && <span className="drain-reason">{lastDrain.reason}</span>}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -160,7 +169,7 @@ const App = () => {
                 <div className="transcript-container">
                     <div className="transcript-header">
                         <h3>Live Transcript</h3>
-                        <button className="btn-toggle-speaker" onClick={toggleSpeaker}>
+                        <button className={`btn-toggle-speaker ${shouldPulse ? 'nudge-pulse' : ''}`} onClick={toggleSpeaker}>
                             {currentSpeaker === 'me' ? <User size={14} /> : <Users size={14} />}
                             <span>Talking: {currentSpeaker === 'me' ? 'You' : 'Them'}</span>
                         </button>
@@ -191,9 +200,25 @@ const App = () => {
                 />
                 {status === 'Loading Models...' && (
                     <div className="model-loading">
-                        <div className="progress-text">Downloading AI Models ({Math.round(progress)}%)</div>
-                        <div className="progress-bar">
-                            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+                        <div className="progress-group">
+                            <div className="progress-item">
+                                <div className="progress-labels">
+                                    <span>Whisper (STT)</span>
+                                    <span>{Math.round(sttProgress)}%</span>
+                                </div>
+                                <div className="progress-bar mini">
+                                    <div className="progress-fill" style={{ width: `${sttProgress}%`, backgroundColor: '#3b82f6' }}></div>
+                                </div>
+                            </div>
+                            <div className="progress-item">
+                                <div className="progress-labels">
+                                    <span>SmolLM2 (AI)</span>
+                                    <span>{Math.round(llmProgress)}%</span>
+                                </div>
+                                <div className="progress-bar mini">
+                                    <div className="progress-fill" style={{ width: `${llmProgress}%`, backgroundColor: '#8b5cf6' }}></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

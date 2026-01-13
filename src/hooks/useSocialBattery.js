@@ -5,9 +5,11 @@ export const useSocialBattery = () => {
     const [battery, setBattery] = useState(100);
     const [sensitivity, setSensitivity] = useState(AppConfig.agency.defaultSensitivity);
     const [isPaused, setIsPaused] = useState(false);
+    const [lastDrain, setLastDrain] = useState(null);
     
     const batteryRef = useRef(battery);
     const lastInteractionRef = useRef(Date.now());
+    const drainTimeoutRef = useRef(null);
 
     useEffect(() => {
         batteryRef.current = battery;
@@ -48,6 +50,14 @@ export const useSocialBattery = () => {
         
         const totalDeduction = Math.min(20, Math.max(1, baseDeduction * multiplier * drainRate * sensitivity * momentumFactor));
         
+        setLastDrain({
+            amount: totalDeduction.toFixed(1),
+            reason: intent !== 'general' ? intent : ''
+        });
+
+        if (drainTimeoutRef.current) clearTimeout(drainTimeoutRef.current);
+        drainTimeoutRef.current = setTimeout(() => setLastDrain(null), 3000);
+
         setBattery(prev => {
             const newVal = Math.max(0, prev - totalDeduction);
             batteryRef.current = newVal;
@@ -67,6 +77,6 @@ export const useSocialBattery = () => {
         battery, deduct, reset, batteryRef, 
         sensitivity, setSensitivity, 
         isPaused, togglePause,
-        recharge, isExhausted
+        recharge, isExhausted, lastDrain
     };
 };

@@ -15,9 +15,12 @@ export const useML = () => {
     
     const { 
         battery, deduct, reset: resetBattery, batteryRef,
-        sensitivity, setSensitivity, isPaused, togglePause, recharge, isExhausted
+        sensitivity, setSensitivity, isPaused, togglePause, recharge, isExhausted, lastDrain
     } = useSocialBattery();
-    const { transcript, addEntry, currentSpeaker, toggleSpeaker, clearTranscript } = useTranscript();
+    const { 
+        transcript, addEntry, currentSpeaker, toggleSpeaker, clearTranscript, 
+        shouldPulse, nudgeSpeaker 
+    } = useTranscript();
 
     const sttWorkerRef = useRef(null);
     const llmWorkerRef = useRef(null);
@@ -73,6 +76,7 @@ export const useML = () => {
         
         const currentBattery = deduct(text, intent, persona);
         addEntry(text);
+        nudgeSpeaker();
 
         const speakerLabel = currentSpeaker === 'me' ? 'Me' : 'Them';
         messagesRef.current.push({ role: 'user', content: `${speakerLabel}: ${text}` });
@@ -177,14 +181,14 @@ export const useML = () => {
     }, [sttReady]);
 
     return {
-        status, progress, transcript, suggestion, detectedIntent, 
+        status, progress, sttProgress, llmProgress, transcript, suggestion, detectedIntent, 
         persona, setPersona, isReady, battery, resetBattery, 
         dismissSuggestion, processAudio,
         isProcessing,
-        currentSpeaker, toggleSpeaker,
+        currentSpeaker, toggleSpeaker, shouldPulse,
         sensitivity, setSensitivity, 
         isPaused, togglePause,
-        recharge, isExhausted,
+        recharge, isExhausted, lastDrain,
         summarizeSession, startNewSession, closeSummary, sessionSummary, isSummarizing, summaryError,
         initialBattery: initialBatteryRef.current
     };
