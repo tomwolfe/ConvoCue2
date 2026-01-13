@@ -62,7 +62,9 @@ const App = () => {
         isSummarizing,
         summaryError,
         initialBattery,
-        progressiveReadiness
+        progressiveReadiness,
+        sttStage,
+        llmStage
     } = useML();
 
     const [showTutorial, setShowTutorial] = useState(false);

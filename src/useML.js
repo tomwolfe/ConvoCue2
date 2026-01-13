@@ -440,6 +440,7 @@ export const useML = () => {
         recharge, isExhausted, lastDrain,
         summarizeSession, startNewSession, closeSummary, sessionSummary, isSummarizing, summaryError,
         initialBattery: initialBatteryRef.current,
-        progressiveReadiness
+        progressiveReadiness,
+        sttStage, llmStage
     };
 };
