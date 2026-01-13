@@ -7,6 +7,7 @@ const numThreads = Math.min(4, Math.max(1, (self.navigator.hardwareConcurrency |
 env.backends.onnx.wasm.numThreads = numThreads;
 
 let sttPipeline = null;
+let isModelLoading = false;
 const STT_MODEL = 'onnx-community/whisper-tiny.en';
 
 self.onmessage = async (event) => {
@@ -15,22 +16,31 @@ self.onmessage = async (event) => {
     try {
         switch (type) {
             case 'load':
-                if (!sttPipeline) {
-                    sttPipeline = await pipeline('automatic-speech-recognition', STT_MODEL, {
-                        device: 'wasm',
-                        dtype: 'q4',
-                        progress_callback: (p) => {
-                            if (p.status === 'progress') {
-                                self.postMessage({ type: 'progress', progress: p.progress, taskId });
+                if (!sttPipeline && !isModelLoading) {
+                    isModelLoading = true;
+                    try {
+                        sttPipeline = await pipeline('automatic-speech-recognition', STT_MODEL, {
+                            device: 'wasm',
+                            dtype: 'q4',
+                            progress_callback: (p) => {
+                                if (p.status === 'progress') {
+                                    self.postMessage({ type: 'progress', progress: p.progress, taskId });
+                                }
                             }
-                        }
-                    });
+                        });
+                        self.postMessage({ type: 'ready', taskId });
+                    } catch (loadError) {
+                        isModelLoading = false;
+                        throw loadError;
+                    }
+                } else if (sttPipeline) {
+                    // Model already loaded
+                    self.postMessage({ type: 'ready', taskId });
                 }
-                self.postMessage({ type: 'ready', taskId });
                 break;
             case 'stt':
                 if (!sttPipeline) throw new Error('STT model not loaded');
-                
+
                 // 80/20: Skip processing if audio is < 0.4s (6400 samples at 16kHz)
                 // This avoids wasting cycles on coughs, door slams, or micro-noises.
                 if (data.length < 6400) {
@@ -48,6 +58,7 @@ self.onmessage = async (event) => {
                 break;
         }
     } catch (error) {
+        isModelLoading = false;
         self.postMessage({ type: 'error', error: error.message, taskId });
     }
 };

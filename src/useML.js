@@ -171,6 +171,7 @@ export const useML = () => {
             '/silero_vad_v5.onnx'
         ];
 
+        // Preload model files with progress tracking
         modelFiles.forEach(file => {
             fetch(file)
                 .then(response => {
@@ -183,6 +184,14 @@ export const useML = () => {
                 });
         });
     }, []);
+
+    // Improved model loading status
+    const getModelLoadStatus = () => {
+        if (!sttReady && !llmReady) return 'Loading AI models...';
+        if (!sttReady) return 'Loading speech-to-text model...';
+        if (!llmReady) return 'Loading language model...';
+        return 'Ready';
+    };
 
     useEffect(() => {
         const sttWorker = new Worker(new URL('./core/sttWorker.js', import.meta.url), { type: 'module' });
@@ -238,7 +247,7 @@ export const useML = () => {
 
     const isReady = sttReady && llmReady;
     const progress = (sttProgress + llmProgress) / 2;
-    const status = !isReady ? 'Loading Models...' : isProcessing ? 'Processing...' : 'Ready';
+    const status = !isReady ? getModelLoadStatus() : isProcessing ? 'Processing...' : 'Ready';
 
     const processAudio = useCallback((audioData) => {
         if (!sttReady || !sttWorkerRef.current) return;

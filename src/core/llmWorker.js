@@ -7,6 +7,7 @@ const numThreads = Math.min(4, Math.max(1, (self.navigator.hardwareConcurrency |
 env.backends.onnx.wasm.numThreads = numThreads;
 
 let llmPipeline = null;
+let isModelLoading = false;
 const LLM_MODEL = 'HuggingFaceTB/SmolLM2-135M-Instruct';
 
 self.onmessage = async (event) => {
@@ -15,29 +16,38 @@ self.onmessage = async (event) => {
     try {
         switch (type) {
             case 'load':
-                if (!llmPipeline) {
-                    llmPipeline = await pipeline('text-generation', LLM_MODEL, {
-                        device: 'wasm',
-                        dtype: 'q4',
-                        progress_callback: (p) => {
-                            if (p.status === 'progress') {
-                                self.postMessage({ type: 'progress', progress: p.progress, taskId });
+                if (!llmPipeline && !isModelLoading) {
+                    isModelLoading = true;
+                    try {
+                        llmPipeline = await pipeline('text-generation', LLM_MODEL, {
+                            device: 'wasm',
+                            dtype: 'q4',
+                            progress_callback: (p) => {
+                                if (p.status === 'progress') {
+                                    self.postMessage({ type: 'progress', progress: p.progress, taskId });
+                                }
                             }
-                        }
-                    });
+                        });
+                        self.postMessage({ type: 'ready', taskId });
+                    } catch (loadError) {
+                        isModelLoading = false;
+                        throw loadError;
+                    }
+                } else if (llmPipeline) {
+                    // Model already loaded
+                    self.postMessage({ type: 'ready', taskId });
                 }
-                self.postMessage({ type: 'ready', taskId });
                 break;
             case 'llm':
                 if (!llmPipeline) throw new Error('LLM model not loaded');
                 const { messages, context, instruction } = data;
-                
+
                 // Optimized 80/20 prompt: Minimal tokens, high clarity
                 const systemPrompt = `Role:${context.persona}. Intent:${context.intent}. Battery:${context.battery}%. Goal:${instruction}`;
 
-                const fullPrompt = `<|im_start|>system\n${systemPrompt}. Rule: ONE suggestion as 3-5 keyword chips, NO full sentences, NO preamble. Format: "Keyword1 Keyword2 Keyword3".<|im_end|>\n` +
-                    messages.map(m => `<|im_start|>user\n${m.content}<|im_end|>`).join('\n') +
-                    '\n<|im_start|>assistant\n';
+                const fullPrompt = `\`\`system\n${systemPrompt}. Rule: ONE suggestion as 3-5 keyword chips, NO full sentences, NO preamble. Format: "Keyword1 Keyword2 Keyword3".\`\`\n` +
+                    messages.map(m => `\`\`user\n${m.content}\`\``).join('\n') +
+                    '\n\`\`assistant\n';
 
                 const output = await llmPipeline(fullPrompt, {
                     max_new_tokens: 24, // Optimized from 32 for speed
@@ -54,7 +64,7 @@ self.onmessage = async (event) => {
             case 'summarize':
                 if (!llmPipeline) throw new Error('LLM model not loaded');
                 const { transcript, stats } = data;
-                
+
                 const transcriptText = transcript
                     .map(t => `[${t.speaker.toUpperCase()}] ${t.text}`)
                     .join('\n');
@@ -75,7 +85,7 @@ Output exactly 3 bullet points:
 3. **Tip**: One specific social skill tip for next time.
 Tone: Supportive, clinical yet empathetic. Max 80 words total.`;
 
-                const summaryFullPrompt = `<|im_start|>system\nYou are an expert social intelligence analyst. Provide brief, structured feedback.<|im_end|>\n<|im_start|>user\n${summaryPrompt}<|im_end|>\n<|im_start|>assistant\n`;
+                const summaryFullPrompt = `\`\`system\nYou are an expert social intelligence analyst. Provide brief, structured feedback.\`\`\n\`\`user\n${summaryPrompt}\`\`\n\`\`assistant\n`;
 
                 const summaryOutput = await llmPipeline(summaryFullPrompt, {
                     max_new_tokens: 150,
@@ -89,6 +99,7 @@ Tone: Supportive, clinical yet empathetic. Max 80 words total.`;
                 break;
         }
     } catch (error) {
+        isModelLoading = false;
         self.postMessage({ type: 'error', error: error.message, taskId });
     }
 };

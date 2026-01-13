@@ -200,12 +200,12 @@ const App = () => {
                     isReady={isReady} 
                     status={status} 
                 />
-                {status === 'Loading Models...' && (
+                {(status.includes('Loading') || status.includes('models')) && (
                     <div className="model-loading">
                         <div className="progress-group">
                             <div className="progress-item">
                                 <div className="progress-labels">
-                                    <span>Whisper (STT)</span>
+                                    <span>Speech Recognition</span>
                                     <span>{Math.round(sttProgress)}%</span>
                                 </div>
                                 <div className="progress-bar mini">
@@ -214,13 +214,16 @@ const App = () => {
                             </div>
                             <div className="progress-item">
                                 <div className="progress-labels">
-                                    <span>SmolLM2 (AI)</span>
+                                    <span>AI Assistant</span>
                                     <span>{Math.round(llmProgress)}%</span>
                                 </div>
                                 <div className="progress-bar mini">
                                     <div className="progress-fill" style={{ width: `${llmProgress}%`, backgroundColor: '#8b5cf6' }}></div>
                                 </div>
                             </div>
+                        </div>
+                        <div className="loading-status-text">
+                            <span>{status}</span>
                         </div>
                     </div>
                 )}

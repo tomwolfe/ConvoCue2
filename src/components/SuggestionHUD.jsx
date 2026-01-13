@@ -28,8 +28,8 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, i
         });
     };
 
-    const actions = isExhausted 
-        ? QUICK_ACTIONS.exhausted 
+    const actions = isExhausted
+        ? QUICK_ACTIONS.exhausted
         : (QUICK_ACTIONS[intent] || QUICK_ACTIONS.social);
 
     return (
@@ -47,7 +47,7 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, i
                         </div>
                     )}
                 </div>
-                <button 
+                <button
                     onClick={onDismiss}
                     style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
                     title="Dismiss"
@@ -55,16 +55,28 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, i
                     <X size={16} />
                 </button>
             </div>
-            
+
             <div className={`suggestion-box ${isProcessing ? 'is-processing' : ''}`}>
                 {suggestion ? (
-                    <div className="keyword-chips">
-                        {suggestion.split(' ').slice(0, 5).map((word, index) => (
-                            <span key={index} className="keyword-chip">{word}</span>
-                        ))}
+                    <div className="suggestion-content">
+                        <div className="keyword-chips">
+                            {suggestion.split(' ').slice(0, 15).map((word, index) => (
+                                <span key={index} className="keyword-chip">{word}</span>
+                            ))}
+                        </div>
                     </div>
                 ) : (
-                    (isProcessing ? "Orchestrating persona response..." : "Suggestions will appear here based on your conversation.")
+                    (isProcessing ? (
+                        <div className="processing-message">
+                            <Loader2 className="animate-spin" size={16} />
+                            <span>Generating your personalized suggestion...</span>
+                        </div>
+                    ) : (
+                        <div className="no-suggestion-placeholder">
+                            <Sparkles size={20} style={{ opacity: 0.3 }} />
+                            <p>AI suggestions will appear here based on your conversation</p>
+                        </div>
+                    ))
                 )}
             </div>
 
@@ -75,8 +87,8 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, i
                 </div>
                 <div className="quick-actions-list">
                     {actions.map((action, i) => (
-                        <button 
-                            key={i} 
+                        <button
+                            key={i}
                             className={`quick-action-btn ${copied === i ? 'copied' : ''} ${isExhausted ? 'large-action' : ''}`}
                             onClick={() => handleQuickAction(action.text, i)}
                         >
