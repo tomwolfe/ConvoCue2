@@ -122,3 +122,31 @@ export const AppConfig = {
         defaultSensitivity: 1.0
     }
 };
+
+export const QUICK_ACTIONS = {
+    social: [
+        { label: "Tell me more", text: "That's interesting, tell me more about that?" },
+        { label: "Good question", text: "That's a great question, let me think about that for a second." },
+        { label: "Valid", text: "I totally see what you mean, that makes a lot of sense." }
+    ],
+    professional: [
+        { label: "Next steps?", text: "What do you think are the most important next steps here?" },
+        { label: "Confirm", text: "Just to make sure I'm on the same page, you're saying...?" },
+        { label: "Goal", text: "What is the primary goal we're trying to achieve with this?" }
+    ],
+    conflict: [
+        { label: "De-escalate", text: "I hear that you're frustrated, and I want to understand your perspective better." },
+        { label: "Pause", text: "I think I need a minute to process that before I respond. Can we take a quick break?" },
+        { label: "Bridge", text: "We seem to have different views here. How can we find a middle ground?" }
+    ],
+    empathy: [
+        { label: "Support", text: "That sounds really tough. Is there anything I can do to support you right now?" },
+        { label: "Validate", text: "It's completely understandable that you feel that way." },
+        { label: "Listen", text: "I'm here to listen. Take all the time you need." }
+    ],
+    exhausted: [
+        { label: "Soft Exit", text: "It's been great chatting, but I'm starting to hit a wall. Mind if we wrap this up?" },
+        { label: "Hard Exit", text: "I've actually got to head out now, but let's catch up again soon!" },
+        { label: "Raincheck", text: "I'm feeling a bit drained right now. Can we continue this conversation another time?" }
+    ]
+};
