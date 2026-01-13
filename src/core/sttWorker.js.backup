@@ -21,7 +21,7 @@ self.onmessage = async (event) => {
                     try {
                         sttPipeline = await pipeline('automatic-speech-recognition', STT_MODEL, {
                             device: 'wasm',
-                            dtype: 'fp16', // Changed from q4 to fp16 for better balance of quality and load time
+                            dtype: 'q4',
                             progress_callback: (p) => {
                                 if (p.status === 'progress') {
                                     self.postMessage({ type: 'progress', progress: p.progress, taskId });

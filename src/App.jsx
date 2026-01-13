@@ -226,7 +226,7 @@ const App = () => {
                             <span>{status}</span>
                         </div>
                         <div className="loading-tips">
-                            <p>💡 Tip: The first load may take 1-2 minutes as models download. Future sessions will be faster!</p>
+                            <p>💡 Tip: Speech recognition loads first. AI assistant loads in background. Future sessions will be faster!</p>
                         </div>
                     </div>
                 )}

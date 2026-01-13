@@ -24,12 +24,7 @@ export const useML = () => {
 
     const sttWorkerRef = useRef(null);
     const llmWorkerRef = useRef(null);
-    // Updated to implement smart context window with key information preservation
-    const messagesRef = useRef({
-        conversation: [],
-        keyEntities: [],
-        conversationThemes: []
-    });
+    const messagesRef = useRef([]);
     const initialBatteryRef = useRef(100);
     const lastTaskId = useRef(0);
     const [sttReady, setSttReady] = useState(false);
@@ -63,16 +58,14 @@ export const useML = () => {
 
     const summarizeSession = useCallback(() => {
         if (!llmWorkerRef.current || transcript.length === 0) return;
-
+        
         setIsSummarizing(true);
         setSummaryError(null);
         const stats = {
             totalCount: transcript.length,
             meCount: transcript.filter(t => t.speaker === 'me').length,
             themCount: transcript.filter(t => t.speaker === 'them').length,
-            totalDrain: Math.round(initialBatteryRef.current - battery),
-            keyThemes: messagesRef.current.conversationThemes.join(', '),
-            keyEntities: messagesRef.current.keyEntities.slice(-10).join(', ')
+            totalDrain: Math.round(initialBatteryRef.current - battery)
         };
 
         llmWorkerRef.current.postMessage({
@@ -90,12 +83,7 @@ export const useML = () => {
         setSummaryError(null);
         clearTranscript();
         resetBattery();
-        // Reset the enhanced context management
-        messagesRef.current = {
-            conversation: [],
-            keyEntities: [],
-            conversationThemes: []
-        };
+        messagesRef.current = [];
         initialBatteryRef.current = 100;
         audioBufferRef.current = [];
         if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
@@ -118,36 +106,8 @@ export const useML = () => {
         nudgeSpeaker();
 
         const speakerLabel = currentSpeaker === 'me' ? 'Me' : 'Them';
-
-        // Smart context window management
-        const newMessage = { role: 'user', content: `${speakerLabel}: ${text}`, timestamp: Date.now() };
-        messagesRef.current.conversation.push(newMessage);
-
-        // Extract key entities and themes from the conversation
-        const words = text.toLowerCase().split(/\s+/);
-        const newEntities = words.filter(word =>
-            AppConfig.personas[persona]?.examples?.some(ex =>
-                ex.suggestion.toLowerCase().includes(word)
-            ) || word.length > 4 // Consider longer words as potential entities
-        );
-        messagesRef.current.keyEntities = [...new Set([...messagesRef.current.keyEntities, ...newEntities])];
-
-        // Update conversation themes based on intent
-        if (!messagesRef.current.conversationThemes.includes(intent)) {
-            messagesRef.current.conversationThemes.push(intent);
-        }
-
-        // Maintain a smart sliding window: keep recent messages and important context
-        if (messagesRef.current.conversation.length > 10) {
-            // Keep the last 6 messages plus important context
-            const recentMessages = messagesRef.current.conversation.slice(-6);
-            // Add summary of earlier conversation if needed
-            const contextSummary = {
-                role: 'system',
-                content: `Previous conversation themes: ${messagesRef.current.conversationThemes.join(', ')}. Key entities mentioned: ${messagesRef.current.keyEntities.slice(-5).join(', ')}.`
-            };
-            messagesRef.current.conversation = [contextSummary, ...recentMessages];
-        }
+        messagesRef.current.push({ role: 'user', content: `${speakerLabel}: ${text}` });
+        if (messagesRef.current.length > 6) messagesRef.current.shift();
 
         // Fatigue-aware filtering: Increase threshold when battery is low
         const batteryThreshold = AppConfig.fatigueFilterThreshold;
@@ -183,7 +143,7 @@ export const useML = () => {
                 type: 'llm',
                 taskId,
                 data: {
-                    messages: [...messagesRef.current.conversation],
+                    messages: [...messagesRef.current],
                     context: contextData,
                     instruction: instruction
                 }
@@ -242,49 +202,16 @@ export const useML = () => {
     };
 
     useEffect(() => {
-        // Progressive loading: Initialize STT worker first for immediate functionality
         const sttWorker = new Worker(new URL('./core/sttWorker.js', import.meta.url), { type: 'module' });
+        const llmWorker = new Worker(new URL('./core/llmWorker.js', import.meta.url), { type: 'module' });
         sttWorkerRef.current = sttWorker;
+        llmWorkerRef.current = llmWorker;
 
         sttWorker.onmessage = (event) => {
             const { type, text, progress, status: stat, error, taskId } = event.data;
             switch (type) {
                 case 'progress': setSttProgress(progress); break;
-                case 'ready':
-                    setSttReady(true);
-                    // Once STT is ready, initialize LLM worker in background
-                    if (!llmWorkerRef.current) {
-                        const llmWorker = new Worker(new URL('./core/llmWorker.js', import.meta.url), { type: 'module' });
-                        llmWorkerRef.current = llmWorker;
-
-                        llmWorker.onmessage = (event) => {
-                            const { type, suggestion: sug, summary, progress, error, taskId } = event.data;
-                            if (taskId && taskId < lastTaskId.current && (type === 'llm_result' || type === 'summary_result' || type === 'error')) return;
-
-                            switch (type) {
-                                case 'progress': setLlmProgress(progress); break;
-                                case 'ready': setLlmReady(true); break;
-                                case 'llm_result':
-                                    setSuggestion(sug);
-                                    setIsProcessing(false);
-                                    break;
-                                case 'summary_result':
-                                    setSessionSummary(summary);
-                                    setIsSummarizing(false);
-                                    setSummaryError(null);
-                                    break;
-                                case 'error':
-                                    console.error('LLM Worker error:', error);
-                                    setIsProcessing(false);
-                                    setIsSummarizing(false);
-                                    setSummaryError(error);
-                                    break;
-                            }
-                        };
-
-                        llmWorker.postMessage({ type: 'load' });
-                    }
-                    break;
+                case 'ready': setSttReady(true); break;
                 case 'stt_result':
                     if (text) processTextRef.current(text);
                     break;
@@ -292,14 +219,37 @@ export const useML = () => {
             }
         };
 
-        // Initialize STT worker first
+        llmWorker.onmessage = (event) => {
+            const { type, suggestion: sug, summary, progress, error, taskId } = event.data;
+            if (taskId && taskId < lastTaskId.current && (type === 'llm_result' || type === 'summary_result' || type === 'error')) return;
+
+            switch (type) {
+                case 'progress': setLlmProgress(progress); break;
+                case 'ready': setLlmReady(true); break;
+                case 'llm_result':
+                    setSuggestion(sug);
+                    setIsProcessing(false);
+                    break;
+                case 'summary_result':
+                    setSessionSummary(summary);
+                    setIsSummarizing(false);
+                    setSummaryError(null);
+                    break;
+                case 'error':
+                    console.error('LLM Worker error:', error);
+                    setIsProcessing(false);
+                    setIsSummarizing(false);
+                    setSummaryError(error);
+                    break;
+            }
+        };
+
         sttWorker.postMessage({ type: 'load' });
+        llmWorker.postMessage({ type: 'load' });
 
         return () => {
             sttWorker.terminate();
-            if (llmWorkerRef.current) {
-                llmWorkerRef.current.terminate();
-            }
+            llmWorker.terminate();
         };
     }, []);
 

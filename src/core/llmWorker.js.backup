@@ -21,7 +21,7 @@ self.onmessage = async (event) => {
                     try {
                         llmPipeline = await pipeline('text-generation', LLM_MODEL, {
                             device: 'wasm',
-                            dtype: 'fp16', // Changed from q4 to fp16 for better quality while maintaining reasonable load time
+                            dtype: 'q4',
                             progress_callback: (p) => {
                                 if (p.status === 'progress') {
                                     self.postMessage({ type: 'progress', progress: p.progress, taskId });
@@ -42,11 +42,12 @@ self.onmessage = async (event) => {
                 if (!llmPipeline) throw new Error('LLM model not loaded');
                 const { messages, context, instruction } = data;
 
-                // Enhanced 80/20 prompt: Better structure for improved quality
-                const systemPrompt = `You are a ${context.persona} AI assistant. Current intent: ${context.intent}. User battery level: ${context.battery}%. ${instruction}`;
+                // Optimized 80/20 prompt: Minimal tokens, high clarity
+                const systemPrompt = `Role:${context.persona}. Intent:${context.intent}. Battery:${context.battery}%. Goal:${instruction}`;
 
-                // Improved prompt with clearer instructions and examples
-                const fullPrompt = `<|system|>\n${systemPrompt}\n\nProvide ONE specific, actionable suggestion as 3-5 keyword chips. Examples: "Acknowledge Validate Redirect", "Ask Clarify Confirm", "Listen Reflect Support". Response format: Keywords only, no explanations.\n<|user|>\n${messages.map(m => m.content).join('\n')}\n<|assistant|>\n`;
+                const fullPrompt = `\`\`system\n${systemPrompt}. Rule: ONE suggestion as 3-5 keyword chips, NO full sentences, NO preamble. Format: "Keyword1 Keyword2 Keyword3".\`\`\n` +
+                    messages.map(m => `\`\`user\n${m.content}\`\``).join('\n') +
+                    '\n\`\`assistant\n';
 
                 const output = await llmPipeline(fullPrompt, {
                     max_new_tokens: 24, // Optimized from 32 for speed
@@ -74,8 +75,6 @@ Stats:
 - My Messages: ${stats.meCount}
 - Their Messages: ${stats.themCount}
 - Battery Drain: ${stats.totalDrain}%
-- Key Themes: ${stats.keyThemes || 'N/A'}
-- Key Entities: ${stats.keyEntities || 'N/A'}
 
 Transcript:
 ${transcriptText}
@@ -86,7 +85,7 @@ Output exactly 3 bullet points:
 3. **Tip**: One specific social skill tip for next time.
 Tone: Supportive, clinical yet empathetic. Max 80 words total.`;
 
-                const summaryFullPrompt = `<|system|>\nYou are an expert social intelligence analyst. Provide brief, structured feedback.\n<|user|>\n${summaryPrompt}\n<|assistant|>\n`;
+                const summaryFullPrompt = `\`\`system\nYou are an expert social intelligence analyst. Provide brief, structured feedback.\`\`\n\`\`user\n${summaryPrompt}\`\`\n\`\`assistant\n`;
 
                 const summaryOutput = await llmPipeline(summaryFullPrompt, {
                     max_new_tokens: 150,
