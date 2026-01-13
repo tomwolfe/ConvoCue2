@@ -65,9 +65,18 @@ self.onmessage = async (event) => {
                         self.postMessage({ type: 'ready', taskId, loadTime });
                     } catch (loadError) {
                         isModelLoading = false;
+                        console.error('LLM Model loading error:', loadError);
+
                         // If WebGPU fails, try falling back to WASM
                         if (isWebGPUSupported) {
                             try {
+                                self.postMessage({
+                                    type: 'progress',
+                                    progress: 0,
+                                    stage: 'falling back to WASM',
+                                    taskId
+                                });
+
                                 llmPipeline = await pipeline('text-generation', LLM_MODEL, {
                                     device: 'wasm',
                                     dtype: 'q4',
@@ -80,6 +89,13 @@ self.onmessage = async (event) => {
                                             }
 
                                             self.postMessage({ type: 'progress', progress: calculatedProgress, taskId });
+                                        } else if (p.status === 'downloading') {
+                                            self.postMessage({
+                                                type: 'progress',
+                                                progress: p.progress || 0,
+                                                stage: p.file?.filename || 'model fallback',
+                                                taskId
+                                            });
                                         }
                                     }
                                 });
@@ -87,10 +103,21 @@ self.onmessage = async (event) => {
                                 const loadTime = Date.now() - modelLoadStartTime;
                                 self.postMessage({ type: 'ready', taskId, loadTime });
                             } catch (fallbackError) {
-                                throw loadError; // Throw original error if fallback also fails
+                                console.error('LLM Model fallback error:', fallbackError);
+                                self.postMessage({
+                                    type: 'error',
+                                    error: `LLM model failed to load. Primary error: ${loadError.message}. Fallback error: ${fallbackError.message}`,
+                                    taskId
+                                });
+                                return;
                             }
                         } else {
-                            throw loadError;
+                            self.postMessage({
+                                type: 'error',
+                                error: `LLM model failed to load: ${loadError.message}`,
+                                taskId
+                            });
+                            return;
                         }
                     }
                 } else if (llmPipeline) {

@@ -338,6 +338,11 @@ const App = () => {
                                 <div className="loading-estimation">
                                     <p><strong>Estimated time remaining:</strong> {Math.max(1, Math.round((100 - progress) * 0.8))} seconds</p>
                                 </div>
+
+                                {/* Resource optimization notice */}
+                                <div className="resource-optimization-notice">
+                                    <p><strong>Device Optimization:</strong> ConvoCue is automatically adjusting to your device's capabilities for the best experience.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -364,6 +369,28 @@ const App = () => {
                                     <li>Positive interactions: Recharge!</li>
                                 </ul>
                                 <p><strong>Example:</strong> Saying "I'm not sure about that" drains less than "I strongly disagree" (conflict).</p>
+
+                                <div className="battery-visualization">
+                                    <h5>Visual Drain Indicators:</h5>
+                                    <div className="drain-indicator-example">
+                                        <div className="drain-factor high-drain">
+                                            <div className="factor-label">Conflict</div>
+                                            <div className="drain-amount">-2.5%</div>
+                                        </div>
+                                        <div className="drain-factor medium-drain">
+                                            <div className="factor-label">Work Discussion</div>
+                                            <div className="drain-amount">-1.2%</div>
+                                        </div>
+                                        <div className="drain-factor low-drain">
+                                            <div className="factor-label">Casual Chat</div>
+                                            <div className="drain-amount">-0.6%</div>
+                                        </div>
+                                        <div className="drain-factor recharge">
+                                            <div className="factor-label">Positive Interaction</div>
+                                            <div className="drain-amount">+0.3%</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

@@ -294,9 +294,33 @@ export const useML = () => {
         processTextRef.current = processText;
     }, [processText]);
 
+    // Adaptive resource detection and model loading
+    const getDeviceInfo = () => {
+        const hardwareConcurrency = navigator.hardwareConcurrency || 2;
+        const memory = navigator.deviceMemory || 4; // Assume 4GB if not available
+        const userAgent = navigator.userAgent.toLowerCase();
+
+        // Determine if device is low-resource based on specs
+        const isLowResource = hardwareConcurrency <= 2 || memory <= 4 ||
+                             userAgent.includes('mobile') || userAgent.includes('android');
+
+        return {
+            hardwareConcurrency,
+            memory,
+            isLowResource,
+            userAgent
+        };
+    };
+
     // Eager fetch model files to prime browser cache
     useEffect(() => {
-        const modelFiles = [
+        const deviceInfo = getDeviceInfo();
+
+        // Select appropriate model based on device capabilities
+        const modelFiles = deviceInfo.isLowResource ? [
+            '/ort-wasm.wasm', // Fallback to simpler WASM if on low-resource device
+            '/silero_vad_v5.onnx'
+        ] : [
             '/ort-wasm-simd-threaded.jsep.mjs',
             '/ort-wasm-simd-threaded.jsep.wasm',
             '/ort-wasm-simd-threaded.mjs',
@@ -347,18 +371,21 @@ export const useML = () => {
 
     // Enhanced model loading status with more specific progress information
     const getDetailedModelLoadStatus = () => {
+        const deviceInfo = getDeviceInfo();
+        const resourceIndicator = deviceInfo.isLowResource ? ' (optimized for low-resource device)' : '';
+
         if (!sttReady && !llmReady) {
             if (sttProgress < 100 && llmProgress < 100) {
-                return `Loading AI models (${Math.round((sttProgress + llmProgress) / 2)}%)... STT: ${sttStage}, LLM: ${llmStage}`;
+                return `Loading AI models (${Math.round((sttProgress + llmProgress) / 2)}%)... STT: ${sttStage}, LLM: ${llmStage}${resourceIndicator}`;
             } else if (sttProgress < 100) {
-                return `Finishing speech-to-text model (${Math.round(sttProgress)}%) - ${sttStage}`;
+                return `Finishing speech-to-text model (${Math.round(sttProgress)}%) - ${sttStage}${resourceIndicator}`;
             } else if (llmProgress < 100) {
-                return `Finishing language model (${Math.round(llmProgress)}%) - ${llmStage}`;
+                return `Finishing language model (${Math.round(llmProgress)}%) - ${llmStage}${resourceIndicator}`;
             }
         }
-        if (!sttReady) return `Loading speech-to-text model (${Math.round(sttProgress)}%) - ${sttStage}`;
-        if (!llmReady) return `Loading language model (${Math.round(llmProgress)}%) - ${llmStage}`;
-        return 'All models loaded and ready!';
+        if (!sttReady) return `Loading speech-to-text model (${Math.round(sttProgress)}%) - ${sttStage}${resourceIndicator}`;
+        if (!llmReady) return `Loading language model (${Math.round(llmProgress)}%) - ${llmStage}${resourceIndicator}`;
+        return `All models loaded and ready! ${resourceIndicator}`.trim();
     };
 
     // Progressive readiness: STT ready = basic functionality, both ready = full functionality

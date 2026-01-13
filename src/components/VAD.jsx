@@ -166,6 +166,12 @@ const VAD = ({ onSpeechEnd, isReady, status, progressiveReadiness }) => {
                     </div>
                 )}
                 {!vadError && !permissionDenied && <span>{status}</span>}
+                {progressiveReadiness === 'loading' && !status.includes('Loading') && (
+                    <div className="status-indicator">
+                        <Loader2 className="animate-spin" size={16} />
+                        <span>Preparing audio systems...</span>
+                    </div>
+                )}
             </div>
 
             {/* Privacy Notice for first-time users */}

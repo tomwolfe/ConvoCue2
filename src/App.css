@@ -1040,6 +1040,21 @@ footer {
     color: var(--text-muted);
 }
 
+.resource-optimization-notice {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    font-size: 0.65rem;
+    text-align: center;
+}
+
+.resource-optimization-notice p {
+    margin: 0.25rem 0;
+    color: var(--accent-green);
+}
+
 /* Tutorial Overlay */
 .tutorial-overlay {
     position: fixed;
@@ -1136,6 +1151,69 @@ footer {
 
 .persona-comparison-table tr:hover {
     background: rgba(255, 255, 255, 0.05);
+}
+
+.battery-visualization {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(99, 102, 241, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.battery-visualization h5 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.7rem;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.drain-indicator-example {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.drain-factor {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
+}
+
+.drain-factor.high-drain {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.drain-factor.medium-drain {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.drain-factor.low-drain {
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.drain-factor.recharge {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.factor-label {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.drain-amount {
+    font-weight: 700;
+    padding: 0.1rem 0.5rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .btn-close-tutorial {
