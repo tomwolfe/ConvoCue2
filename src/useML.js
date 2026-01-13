@@ -32,6 +32,30 @@ export const useML = () => {
     const [sttProgress, setSttProgress] = useState(0);
     const [llmProgress, setLlmProgress] = useState(0);
 
+    const audioBufferRef = useRef([]);
+    const flushTimeoutRef = useRef(null);
+
+    const flushAudioBuffer = useCallback(() => {
+        if (audioBufferRef.current.length === 0) return;
+        
+        const totalLength = audioBufferRef.current.reduce((acc, curr) => acc + curr.length, 0);
+        const combined = new Float32Array(totalLength);
+        let offset = 0;
+        for (const buffer of audioBufferRef.current) {
+            combined.set(buffer, offset);
+            offset += buffer.length;
+        }
+        
+        if (sttWorkerRef.current) {
+            sttWorkerRef.current.postMessage({ type: 'stt', data: combined });
+        }
+        audioBufferRef.current = [];
+        if (flushTimeoutRef.current) {
+            clearTimeout(flushTimeoutRef.current);
+            flushTimeoutRef.current = null;
+        }
+    }, []);
+
     const summarizeSession = useCallback(() => {
         if (!llmWorkerRef.current || transcript.length === 0) return;
         
@@ -61,6 +85,8 @@ export const useML = () => {
         resetBattery();
         messagesRef.current = [];
         initialBatteryRef.current = 100;
+        audioBufferRef.current = [];
+        if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
     }, [clearTranscript, resetBattery]);
 
     const closeSummary = useCallback(() => {
@@ -185,8 +211,25 @@ export const useML = () => {
 
     const processAudio = useCallback((audioData) => {
         if (!sttReady || !sttWorkerRef.current) return;
-        sttWorkerRef.current.postMessage({ type: 'stt', data: audioData });
-    }, [sttReady]);
+        
+        audioBufferRef.current.push(audioData);
+        
+        if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
+        
+        const totalLength = audioBufferRef.current.reduce((acc, curr) => acc + curr.length, 0);
+        // If buffer > 3s, flush immediately, otherwise wait 300ms for more speech
+        if (totalLength > 48000) { 
+            flushAudioBuffer();
+        } else {
+            flushTimeoutRef.current = setTimeout(flushAudioBuffer, 300);
+        }
+    }, [sttReady, flushAudioBuffer]);
+
+    useEffect(() => {
+        return () => {
+            if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
+        };
+    }, []);
 
     return {
         status, progress, sttProgress, llmProgress, transcript, suggestion, detectedIntent, 
