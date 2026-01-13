@@ -2,9 +2,20 @@ import { pipeline, env } from '@huggingface/transformers';
 
 env.allowLocalModels = false;
 env.useBrowserCache = true;
-env.backends.onnx.wasm.wasmPaths = "/";
-const numThreads = Math.min(4, Math.max(1, (self.navigator.hardwareConcurrency || 2) - 1));
-env.backends.onnx.wasm.numThreads = numThreads;
+
+// Check for WebGPU support and configure accordingly
+const isWebGPUSupported = typeof navigator !== 'undefined' &&
+                          navigator.gpu !== undefined;
+
+if (isWebGPUSupported) {
+    // WebGPU configuration
+    env.backends.onnx.wasm.wasmPaths = "/";
+} else {
+    // Fallback to WASM configuration
+    env.backends.onnx.wasm.wasmPaths = "/";
+    const numThreads = Math.min(4, Math.max(1, (self.navigator.hardwareConcurrency || 2) - 1));
+    env.backends.onnx.wasm.numThreads = numThreads;
+}
 
 let sttPipeline = null;
 let isModelLoading = false;
@@ -19,8 +30,11 @@ self.onmessage = async (event) => {
                 if (!sttPipeline && !isModelLoading) {
                     isModelLoading = true;
                     try {
+                        // Use WebGPU if supported, otherwise fallback to WASM
+                        const device = isWebGPUSupported ? 'webgpu' : 'wasm';
+
                         sttPipeline = await pipeline('automatic-speech-recognition', STT_MODEL, {
-                            device: 'wasm',
+                            device: device,
                             dtype: 'q4',
                             progress_callback: (p) => {
                                 if (p.status === 'progress') {
@@ -31,7 +45,25 @@ self.onmessage = async (event) => {
                         self.postMessage({ type: 'ready', taskId });
                     } catch (loadError) {
                         isModelLoading = false;
-                        throw loadError;
+                        // If WebGPU fails, try falling back to WASM
+                        if (isWebGPUSupported) {
+                            try {
+                                sttPipeline = await pipeline('automatic-speech-recognition', STT_MODEL, {
+                                    device: 'wasm',
+                                    dtype: 'q4',
+                                    progress_callback: (p) => {
+                                        if (p.status === 'progress') {
+                                            self.postMessage({ type: 'progress', progress: p.progress, taskId });
+                                        }
+                                    }
+                                });
+                                self.postMessage({ type: 'ready', taskId });
+                            } catch (fallbackError) {
+                                throw loadError; // Throw original error if fallback also fails
+                            }
+                        } else {
+                            throw loadError;
+                        }
                     }
                 } else if (sttPipeline) {
                     // Model already loaded
