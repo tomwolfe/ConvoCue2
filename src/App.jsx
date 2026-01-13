@@ -114,13 +114,28 @@ const App = () => {
                             <div className="tooltip-content">
                                 <h4>How Social Battery Works</h4>
                                 <p>Every interaction drains your social energy:</p>
-                                <ul>
-                                    <li><strong>Conflict</strong>: Drains most energy</li>
-                                    <li><strong>Work discussions</strong>: Moderate drain</li>
-                                    <li><strong>Emotional topics</strong>: Moderate drain</li>
-                                    <li><strong>Casual conversation</strong>: Low drain</li>
-                                    <li><strong>Positive interactions</strong>: Recharge!</li>
-                                </ul>
+                                <div className="battery-drain-visualization">
+                                    <div className="drain-factor high-drain">
+                                        <div className="factor-label">Conflict</div>
+                                        <div className="drain-amount">High Drain</div>
+                                    </div>
+                                    <div className="drain-factor medium-drain">
+                                        <div className="factor-label">Work Discussions</div>
+                                        <div className="drain-amount">Moderate</div>
+                                    </div>
+                                    <div className="drain-factor medium-drain">
+                                        <div className="factor-label">Emotional Topics</div>
+                                        <div className="drain-amount">Moderate</div>
+                                    </div>
+                                    <div className="drain-factor low-drain">
+                                        <div className="factor-label">Casual Conversation</div>
+                                        <div className="drain-amount">Low</div>
+                                    </div>
+                                    <div className="drain-factor recharge">
+                                        <div className="factor-label">Positive Interactions</div>
+                                        <div className="drain-amount">Recharge!</div>
+                                    </div>
+                                </div>
                                 <p>Take breaks to let your battery recover.</p>
                             </div>
                         </div>
@@ -307,6 +322,18 @@ const App = () => {
                                     </ul>
                                 </div>
 
+                                {/* Key benefits during loading */}
+                                <div className="loading-benefits">
+                                    <h5>Key Benefits You'll Experience:</h5>
+                                    <ul>
+                                        <li>Real-time conversation analysis</li>
+                                        <li>Personalized response suggestions</li>
+                                        <li>Social battery monitoring to prevent exhaustion</li>
+                                        <li>Multiple coaching personas for different contexts</li>
+                                        <li>100% on-device privacy (no data leaves your computer)</li>
+                                    </ul>
+                                </div>
+
                                 {/* Estimated time remaining */}
                                 <div className="loading-estimation">
                                     <p><strong>Estimated time remaining:</strong> {Math.max(1, Math.round((100 - progress) * 0.8))} seconds</p>
@@ -346,6 +373,39 @@ const App = () => {
                                 <h4>Personas</h4>
                                 <p>Switch between Anxiety Coach, EQ Guide, or Pro Exec to change the style of suggestions.</p>
                                 <p><strong>Tip:</strong> Start with "Anxiety Coach" if you're new to the app.</p>
+                                <div className="persona-comparison-table">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Persona</th>
+                                                <th>Best For</th>
+                                                <th>Drain Rate</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Anxiety Coach</td>
+                                                <td>Social anxiety, gentle guidance</td>
+                                                <td>Medium-High</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Pro Exec</td>
+                                                <td>Business meetings, direct feedback</td>
+                                                <td>Low-Medium</td>
+                                            </tr>
+                                            <tr>
+                                                <td>EQ Coach</td>
+                                                <td>Relationships, emotional support</td>
+                                                <td>Low</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Culture Guide</td>
+                                                <td>Cross-cultural, diplomatic</td>
+                                                <td>Medium</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
 
