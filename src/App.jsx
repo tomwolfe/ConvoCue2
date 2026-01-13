@@ -45,7 +45,8 @@ const App = () => {
         setSensitivity, 
         isPaused, 
         togglePause,
-        recharge
+        recharge,
+        isExhausted
     } = useML();
 
     const [showTutorial, setShowTutorial] = useState(false);
@@ -70,9 +71,9 @@ const App = () => {
                             <span>{Math.round(battery)}%</span>
                         </div>
                         <div className="battery-hud" onClick={togglePause}>
-                            <div className={`battery-fill ${battery < 20 && !isPaused ? 'critical' : ''}`} style={{ 
+                            <div className={`battery-fill ${isExhausted && !isPaused ? 'critical' : ''}`} style={{ 
                                 width: `${battery}%`, 
-                                backgroundColor: isPaused ? '#94a3b8' : battery < 20 ? '#ef4444' : battery < 50 ? '#f59e0b' : '#10b981' 
+                                backgroundColor: isPaused ? '#94a3b8' : isExhausted ? '#ef4444' : battery < 50 ? '#f59e0b' : '#10b981' 
                             }}></div>
                             {isPaused && <div className="battery-paused-overlay">PAUSED</div>}
                         </div>
@@ -123,6 +124,7 @@ const App = () => {
                     onDismiss={dismissSuggestion} 
                     isProcessing={isProcessing}
                     battery={battery}
+                    isExhausted={isExhausted}
                 />
                 
                 <div className="transcript-container">

@@ -57,14 +57,12 @@ export const useSocialBattery = () => {
         return batteryRef.current;
     }, [isPaused, sensitivity]);
 
-    const reset = useCallback(() => setBattery(100), []);
-    const togglePause = useCallback(() => setIsPaused(p => !p), []);
-    const recharge = useCallback((amount) => setBattery(prev => Math.min(100, prev + amount)), []);
+    const isExhausted = battery < AppConfig.minBatteryThreshold;
 
     return { 
         battery, deduct, reset, batteryRef, 
         sensitivity, setSensitivity, 
         isPaused, togglePause,
-        recharge
+        recharge, isExhausted
     };
 };

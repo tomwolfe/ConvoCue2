@@ -12,7 +12,7 @@ export const useML = () => {
     
     const { 
         battery, deduct, reset: resetBattery, batteryRef,
-        sensitivity, setSensitivity, isPaused, togglePause, recharge
+        sensitivity, setSensitivity, isPaused, togglePause, recharge, isExhausted
     } = useSocialBattery();
     const { transcript, addEntry, currentSpeaker, toggleSpeaker } = useTranscript();
 
@@ -133,6 +133,6 @@ export const useML = () => {
         currentSpeaker, toggleSpeaker,
         sensitivity, setSensitivity, 
         isPaused, togglePause,
-        recharge
+        recharge, isExhausted
     };
 };

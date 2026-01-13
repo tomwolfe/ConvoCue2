@@ -10,15 +10,21 @@ const INTENT_UI = {
     general: { icon: <Sparkles size={14} />, color: '#8b5cf6', label: 'General' }
 };
 
-const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery }) => {
+const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, isExhausted }) => {
     const [copied, setCopied] = useState(null);
     const ui = INTENT_UI[intent] || INTENT_UI.general;
-    const isExhausted = battery < AppConfig.minBatteryThreshold;
 
     const handleQuickAction = (text, index) => {
-        navigator.clipboard.writeText(text);
-        setCopied(index);
-        setTimeout(() => setCopied(null), 2000);
+        if (!navigator.clipboard) {
+            console.error('Clipboard API not available');
+            return;
+        }
+        navigator.clipboard.writeText(text).then(() => {
+            setCopied(index);
+            setTimeout(() => setCopied(null), 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
     };
 
     const actions = isExhausted 
@@ -65,8 +71,8 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery })
                             className={`quick-action-btn ${copied === i ? 'copied' : ''}`}
                             onClick={() => handleQuickAction(action.text, i)}
                         >
-                            {copied === i ? <ClipboardCheck size={12} /> : null}
-                            <span>{copied === i ? 'Copied!' : action.label}</span>
+                            {copied === i ? <ClipboardCheck size={12} /> : <Zap size={12} style={{ opacity: 0.6 }} />}
+                            <span>{action.label}</span>
                         </button>
                     ))}
                 </div>
