@@ -1380,6 +1380,18 @@ footer {
 
 .btn-close-tutorial {
     width: 100%;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 1rem;
 }
 
 .troubleshooting-guide-link {
@@ -1426,19 +1438,6 @@ footer {
 
 .troubleshooting-guide li {
     margin-bottom: 0.25rem;
-}
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 0.75rem;
-    border-radius: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 1rem;
 }
 
 .btn-mic {
