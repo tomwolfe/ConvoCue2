@@ -471,101 +471,24 @@ const App = () => {
                     status={status}
                     progressiveReadiness={progressiveReadiness}
                 />
-                {(status.includes('Loading') || status.includes('models')) && (
-                    <div className="model-loading">
-                        <div className="progress-group">
-                            <div className="progress-item">
-                                <div className="progress-labels">
-                                    <span>Speech Recognition</span>
-                                    <span>{Math.round(sttProgress)}% {sttStage && `(${sttStage})`}</span>
-                                </div>
-                                <div className="progress-bar mini">
-                                    <div className="progress-fill" style={{ width: `${sttProgress}%`, backgroundColor: '#3b82f6' }}></div>
-                                </div>
+                {!isReady && (
+                    <div className="model-loading-overlay-minimized">
+                        <div className="loading-status-bar">
+                            <div className="status-info">
+                                <Sparkles size={14} className="loading-icon-spin" />
+                                <span>{status}</span>
+                                <span className="overall-percent">{Math.round(progress)}%</span>
                             </div>
-                            <div className="progress-item">
-                                <div className="progress-labels">
-                                    <span>AI Assistant</span>
-                                    <span>{Math.round(llmProgress)}% {llmStage && `(${llmStage})`}</span>
-                                </div>
-                                <div className="progress-bar mini">
-                                    <div className="progress-fill" style={{ width: `${llmProgress}%`, backgroundColor: '#8b5cf6' }}></div>
-                                </div>
+                            <div className="progress-bar-mini">
+                                <div className="progress-fill" style={{ width: `${progress}%` }}></div>
                             </div>
                         </div>
-
-                        {/* Enhanced loading status with estimated time */}
-                        <div className="loading-status-text">
-                            <span>{status}</span>
-                        </div>
-
-                        {/* Loading progress bar with overall progress */}
-                        <div className="overall-progress">
-                            <div className="progress-labels">
-                                <span>Overall Progress</span>
-                                <span>{Math.round(progress)}%</span>
-                            </div>
-                            <div className="progress-bar">
-                                <div className="progress-fill" style={{ width: `${progress}%`, backgroundColor: '#6366f1' }}></div>
-                            </div>
-                        </div>
-
+                    </div>
+                )}
+                {(status.includes('Loading') || status.includes('models')) && showTutorial && (
+                    <div className="model-loading-context">
                         <div className="loading-tips">
-                            <p>💡 Tip: The first load may take 1-2 minutes as models download. Future sessions will be faster!</p>
-                            <p>While you wait, here's how ConvoCue helps: <strong>It listens to your conversation and suggests the right thing to say next, helping you navigate social situations with confidence.</strong></p>
-
-                            {/* Interactive tutorial content during loading */}
-                            <div className="loading-interactive">
-                                <h4>While you wait, try this sample conversation:</h4>
-                                <div className="sample-conversation">
-                                    <div className="conversation-line">
-                                        <span className="speaker">Them:</span>
-                                        <span className="text">"How was your weekend?"</span>
-                                    </div>
-                                    <div className="conversation-line">
-                                        <span className="speaker">You:</span>
-                                        <span class="text">"It was great, thanks! How about yours?"</span>
-                                    </div>
-                                    <div className="conversation-line">
-                                        <span className="speaker">Suggestion:</span>
-                                        <span class="text">"Ask about their weekend"</span>
-                                    </div>
-                                </div>
-                                <p>ConvoCue analyzes your conversation and suggests the right response at the right time!</p>
-
-                                {/* Add loading tips */}
-                                <div className="loading-enhancement-tips">
-                                    <h5>What's happening during loading?</h5>
-                                    <ul>
-                                        <li>Downloading Whisper Tiny for speech recognition</li>
-                                        <li>Loading SmolLM2 for AI suggestions</li>
-                                        <li>Initializing audio processing engine</li>
-                                        <li>Setting up privacy-first processing</li>
-                                    </ul>
-                                </div>
-
-                                {/* Key benefits during loading */}
-                                <div className="loading-benefits">
-                                    <h5>Key Benefits You'll Experience:</h5>
-                                    <ul>
-                                        <li>Real-time conversation analysis</li>
-                                        <li>Personalized response suggestions</li>
-                                        <li>Social battery monitoring to prevent exhaustion</li>
-                                        <li>Multiple coaching personas for different contexts</li>
-                                        <li>100% on-device privacy (no data leaves your computer)</li>
-                                    </ul>
-                                </div>
-
-                                {/* Estimated time remaining */}
-                                <div className="loading-estimation">
-                                    <p><strong>Estimated time remaining:</strong> {Math.max(1, Math.round((100 - progress) * 0.8))} seconds</p>
-                                </div>
-
-                                {/* Resource optimization notice */}
-                                <div className="resource-optimization-notice">
-                                    <p><strong>Device Optimization:</strong> ConvoCue is automatically adjusting to your device's capabilities for the best experience.</p>
-                                </div>
-                            </div>
+                            <p>💡 Tip: Exploring Goals or History while we prepare your AI co-pilot!</p>
                         </div>
                     </div>
                 )}

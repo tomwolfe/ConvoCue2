@@ -35,7 +35,9 @@ const NUANCE_PATTERNS = [
     // Negation check: if "don't disagree" or "no problem", reduce conflict significantly
     { regex: /\b(don't|do not|doesn't|does not|no|not|never)\s+\b(disagree|wrong|problem|issue|mistake|fail|upset|mad)\b/gi, conflict: -4, empathy: 1, positive: 1 },
     { regex: /\b(really|very|extremely|so|totally)\b/gi, multiplier: 1.3 }, // Intensifiers
-    // Context-aware patterns for more nuanced detection
+    // Negation of positive terms = conflict/negative
+    { regex: /\b(don't|do not|doesn't|does not|no|not|never)\s+\b(agree|sure|certain|happy|like|want|good|great|fine)\b/gi, conflict: 2.0, positive: -1.5 },
+    // Context-aware patterns for more sophisticated detection
     { regex: /\b(understand|see your point|that makes sense|valid point|good point)\b/gi, empathy: 1.5, conflict: -1 },
     { regex: /\b(what do you think|how do you feel|your opinion|what's your take)\b/gi, social: 1.2, empathy: 1.0 },
     { regex: /\b(urgent|deadline|ASAP|immediately|right now)\b/gi, professional: 1.5, conflict: 0.5 },
@@ -208,11 +210,13 @@ const BACKCHANNEL_PHRASES = new Set([
 const COMMON_PATTERNS = new Map([
     // Social patterns
     [/how are you/i, { intent: 'social', suggestion: "I'm doing well, thank you! How about yourself?" }],
+    [/how's it going/i, { intent: 'social', suggestion: "Pretty good! How are things with you?" }],
+    [/what's up/i, { intent: 'social', suggestion: "Not much, just enjoying the day. What about you?" }],
     [/how was your weekend/i, { intent: 'social', suggestion: "It was relaxing, thanks! How about yours?" }],
     [/what did you do/i, { intent: 'social', suggestion: "Oh, I mostly just relaxed at home. What about you?" }],
+    [/nice to see you/i, { intent: 'social', suggestion: "You too! It's been a while. How have you been?" }],
     [/tell me about/i, { intent: 'social', suggestion: "That's interesting! Tell me more about that." }],
     [/what do you think/i, { intent: 'social', suggestion: "That's a great point. I think..." }],
-    [/what's up/i, { intent: 'social', suggestion: "Not much, just taking it easy. How about you?" }],
     [/good to see you/i, { intent: 'social', suggestion: "Yes, it's been too long! How have you been?" }],
     [/long time no see/i, { intent: 'social', suggestion: "I know, right? Time flies! What have you been up to?" }],
 
@@ -223,6 +227,8 @@ const COMMON_PATTERNS = new Map([
     [/meeting agenda/i, { intent: 'professional', suggestion: "Let's cover the key points first, then discuss next steps." }],
     [/next steps/i, { intent: 'professional', suggestion: "The priority is to finalize the proposal by Friday." }],
     [/deadline/i, { intent: 'professional', suggestion: "We're aiming to complete this by the end of the week." }],
+    [/what do you do/i, { intent: 'professional', suggestion: "I work in software development. What about you?" }],
+    [/how is work/i, { intent: 'professional', suggestion: "Busy as usual, but good. How are things on your end?" }],
 
     // Empathy patterns
     [/had a bad day/i, { intent: 'empathy', suggestion: "I'm sorry to hear that. What happened?" }],
@@ -238,7 +244,8 @@ const COMMON_PATTERNS = new Map([
     [/problem with/i, { intent: 'conflict', suggestion: "Thanks for bringing this up. How should we address it?" }],
     [/not sure about that/i, { intent: 'conflict', suggestion: "I appreciate your perspective. Let's explore both options." }],
     [/that's not fair/i, { intent: 'conflict', suggestion: "I hear your concern. How can we make this more equitable?" }],
-    [/feeling frustrated/i, { intent: 'conflict', suggestion: "I understand your frustration. What solution would work best for you?" }]
+    [/feeling frustrated/i, { intent: 'conflict', suggestion: "I understand your frustration. What solution would work best for you?" }],
+    [/you're wrong/i, { intent: 'conflict', suggestion: "I might have misunderstood. Can you help me see your perspective?" }]
 ]);
 
 export const detectTurnTake = (text) => {
@@ -298,45 +305,53 @@ export const getPrecomputedSuggestion = (text) => {
 
 /**
  * Provides a hint for who is likely speaking based on content.
- * 80/20: Simple heuristics for "I" vs "You" can solve most speaker-switching friction.
+ * 80/20: Robust heuristics for pronouns and turn-taking solve most speaker-switching friction.
  */
 export const detectSpeakerHint = (text, currentSpeaker) => {
     if (!text || text.trim().length < 2) return null;
     const textLower = text.toLowerCase().trim();
 
-    // Heuristics for 'me' (the user) - Strong starters that usually indicate the mic owner
+    // Heuristics for 'me' (the user) - Strong self-referential starters
     const meIndicators = [
-        /^i\s/i, /^i'm\s/i, /^i've\s/i, /^i'll\s/i, /^my\s/i,
-        /^i\sdon't\s/i, /^i\sthink\s/i, /^i\sknow\s/i, /^i\sfeel\s/i,
-        /\si\sam\s/i, /\si\shave\s/i, /\si\swill\s/i
+        /^i\b/i, /^i'm\b/i, /^i've\b/i, /^i'll\b/i, /^my\b/i,
+        /^i\sdon't\b/i, /^i\sthink\b/i, /^i\sknow\b/i, /^i\sfeel\b/i,
+        /^me\stoo\b/i, /^that's\smy\b/i
     ];
     
-    // Heuristics for 'them' (the other person) - Often asking questions or referring to 'you'
+    // Heuristics for 'them' (the other person) - Direct address or questions to 'you'
     const themIndicators = [
-        /^you\s/i, /^your\s/i, /^you're\s/i,
-        /^do\syou\s/i, /^can\syou\s/i, /^have\syou\s/i, /^how\sabout\syou/i,
-        /\swhat\sdo\syou\b/i, /\show\sdo\syou\b/i,
-        /\syou\sshould\b/i, /\scan\syou\b/i
+        /^you\b/i, /^your\b/i, /^you're\b/i,
+        /^do\syou\b/i, /^can\syou\b/i, /^have\syou\b/i, /^how\sabout\syou/i,
+        /^are\syou\b/i, /^did\syou\b/i,
+        /what\sdo\syou\b/i, /how\sdo\syou\b/i, /your\sturn\b/i
     ];
 
     const isMeTargeted = meIndicators.some(pattern => pattern.test(textLower));
     const isThemTargeted = themIndicators.some(pattern => pattern.test(textLower));
 
-    // Refined heuristic: If the text starts with "I", it is highly likely 'me' (the user)
-    // because the user's voice is always clearer/closer to the mic, and STT
-    // is biased towards the clearer voice.
+    // Priority 1: High-confidence "I" statements belong to the mic owner ('me')
     if (isMeTargeted && !isThemTargeted) return 'me';
     
-    // If it's a question starting with "You" or "Do you", it's likely 'them'
-    // but we only switch to 'them' if they are clearly addressed or if 'me' was just speaking.
-    if (isThemTargeted && !isMeTargeted) return 'them';
+    // Priority 2: Questions directed at "you" or statements starting with "You" are likely 'them'
+    // especially if the previous speaker was 'me'
+    if (isThemTargeted && !isMeTargeted) {
+        // If 'me' was just speaking and says something starting with "You", it might be 'me' referring to 'them'
+        // But in STT, if the audio is clear, it's usually the person the mic is closest to.
+        // However, if it's a question, it's very likely 'them' asking the user.
+        if (textLower.includes('?') || textLower.startsWith('do you') || textLower.startsWith('how about you')) {
+            return 'them';
+        }
+        return 'them';
+    }
 
-    // Contextual: If 'them' is speaking and says something that sounds like a personal statement
-    // it's probably a misattribution because the user is the primary speaker.
-    if (currentSpeaker === 'them' && textLower.startsWith('i ')) return 'me';
-
-    // If 'me' is speaking and asks a direct question, they might still be speaking,
-    // but we don't auto-toggle 'them' unless the transcript is very clear.
+    // Priority 3: Turn-taking logic
+    // If 'me' asked a question in the previous turn (context needed, but for now we look at current text)
+    // If the text is a short response like "Yeah", "No", "Okay", it usually follows a question.
+    const isShortResponse = /^(yeah|yes|no|okay|ok|sure|right|cool)\.?$/i.test(textLower);
+    if (isShortResponse) {
+        // If it's a short response, it's likely the person who WASN'T just speaking
+        return currentSpeaker === 'me' ? 'them' : 'me';
+    }
     
     return null;
 };

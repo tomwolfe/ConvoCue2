@@ -161,25 +161,29 @@ export const useML = (initialState = null) => {
         
         // Priority 1: Content-based hint with confidence threshold
         if (speakerHint) {
-            speakerConfidenceRef.current[speakerHint]++;
-            // If we get 2 consecutive hints or a strong hint, toggle
-            if (speakerConfidenceRef.current[speakerHint] >= 1 || text.length > 50) {
+            // Increase confidence for the hinted speaker
+            speakerConfidenceRef.current[speakerHint] += text.length > 20 ? 2 : 1;
+            
+            // If we have strong confidence or consecutive hints, toggle
+            if (speakerConfidenceRef.current[speakerHint] >= 2) {
                 if (speakerHint !== currentSpeaker) {
                     setCurrentSpeaker(speakerHint);
-                    // Reset confidence for both
-                    speakerConfidenceRef.current = { me: 0, them: 0 };
                 }
+                // Reset confidence for both after a switch or confirming current
+                speakerConfidenceRef.current = { me: 0, them: 0 };
             }
         } else {
-            // Decay confidence if no hint
+            // Decay confidence slowly if no hint
             speakerConfidenceRef.current.me = Math.max(0, speakerConfidenceRef.current.me - 0.5);
             speakerConfidenceRef.current.them = Math.max(0, speakerConfidenceRef.current.them - 0.5);
         }
 
         // Priority 2: Timing-based heuristic (Response to suggestion)
-        if (currentSpeaker === 'them' && timeSinceLastSuggestion < 15000 && timeSinceLastSuggestion > 1000) {
-            if (text.toLowerCase().startsWith('i ') || text.length > 10) {
+        // If 'them' speaks shortly after a suggestion was shown, and it sounds like a response
+        if (currentSpeaker === 'them' && timeSinceLastSuggestion < 10000 && timeSinceLastSuggestion > 500) {
+            if (/^(i |my |that's )/i.test(text)) {
                 setCurrentSpeaker('me');
+                speakerConfidenceRef.current = { me: 0, them: 0 };
             }
         }
 
