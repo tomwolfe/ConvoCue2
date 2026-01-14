@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { detectIntent, shouldGenerateSuggestion, getPrecomputedSuggestion, detectTurnTake, detectSpeakerHint } from './core/intentEngine';
-import { AppConfig, BRIDGE_PHRASES } from './core/config';
+import { AppConfig, BRIDGE_PHRASES, QUICK_ACTIONS } from './core/config';
 import { useSocialBattery } from './hooks/useSocialBattery';
 import { useTranscript } from './hooks/useTranscript';
 
@@ -24,6 +24,40 @@ export const useML = (initialState = null) => {
 
     // Track if a suggestion was recently shown to help with auto-speaker detection
     const lastSuggestionTimeRef = useRef(0);
+
+    // Enhanced cache for frequently used suggestions to reduce LLM calls
+    const suggestionCache = useRef(new Map());
+    const intentHistory = useRef([]); // Track recent intents for context
+    
+    // Confidence-based speaker detection (80/20: Reduce flickering)
+    const speakerConfidenceRef = useRef({ me: 0, them: 0 });
+
+    // Add a fast lookup for common conversation starters to provide instant responses
+    const fastLookupMap = useRef(new Map([
+        // Common greetings
+        ['hello', { intent: 'social', suggestion: 'Hi there! How are you doing today?' }],
+        ['hi', { intent: 'social', suggestion: 'Hello! Nice to meet you.' }],
+        ['hey', { intent: 'social', suggestion: 'Hey! What\'s up?' }],
+        ['how are you', { intent: 'social', suggestion: 'I\'m doing well, thank you! How about yourself?' }],
+        ['how\'s it going', { intent: 'social', suggestion: 'Pretty good! How about with you?' }],
+
+        // Common questions
+        ['what\'s up', { intent: 'social', suggestion: 'Not much, just taking it easy. How about you?' }],
+        ['what are you up to', { intent: 'social', suggestion: 'Just relaxing. What about you?' }],
+        ['how was your weekend', { intent: 'social', suggestion: 'It was relaxing, thanks! How about yours?' }],
+
+        // Professional starters
+        ['how is the project going', { intent: 'professional', suggestion: 'Making good progress. Any specific concerns?' }],
+        ['what are the next steps', { intent: 'professional', suggestion: 'The priority is finalizing the proposal by Friday.' }],
+
+        // Empathetic responses
+        ['i had a rough day', { intent: 'empathy', suggestion: 'I\'m sorry to hear that. What happened?' }],
+        ['i\'m feeling overwhelmed', { intent: 'empathy', suggestion: 'That sounds really challenging. How can I support you?' }],
+
+        // Conflict de-escalation
+        ['i don\'t agree', { intent: 'conflict', suggestion: 'I see where you\'re coming from. Can we find common ground?' }],
+        ['that won\'t work', { intent: 'conflict', suggestion: 'I understand your concern. What would work better for you?' }]
+    ]));
 
     // Initialize with initial state if provided (for loading sessions)
     useEffect(() => {
@@ -99,6 +133,45 @@ export const useML = (initialState = null) => {
             default:
                 navigator.vibrate(50);
         }
+    }, []);
+
+    const summarizeSession = useCallback(() => {
+        if (!llmWorkerRef.current || transcript.length === 0) return;
+        
+        setIsSummarizing(true);
+        setSummaryError(null);
+        const stats = {
+            totalCount: transcript.length,
+            meCount: transcript.filter(t => t.speaker === 'me').length,
+            themCount: transcript.filter(t => t.speaker === 'them').length,
+            totalDrain: Math.round(initialBatteryRef.current - battery)
+        };
+
+        llmWorkerRef.current.postMessage({
+            type: 'summarize',
+            taskId: ++lastTaskId.current,
+            data: {
+                transcript,
+                stats
+            }
+        });
+    }, [transcript, battery]);
+
+    const startNewSession = useCallback(() => {
+        setSessionSummary(null);
+        setSummaryError(null);
+        clearTranscript();
+        resetBattery();
+        messagesRef.current = [];
+        initialBatteryRef.current = 100;
+        audioBufferRef.current = [];
+        if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
+    }, [clearTranscript, resetBattery]);
+
+    const closeSummary = useCallback(() => {
+        setSessionSummary(null);
+        setIsSummarizing(false);
+        setSummaryError(null);
     }, []);
 
     const processText = useCallback((text) => {
