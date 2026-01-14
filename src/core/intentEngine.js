@@ -241,6 +241,29 @@ const COMMON_PATTERNS = new Map([
     [/feeling frustrated/i, { intent: 'conflict', suggestion: "I understand your frustration. What solution would work best for you?" }]
 ]);
 
+export const detectTurnTake = (text) => {
+    if (!text || text.trim().length < 3) return false;
+    const textLower = text.toLowerCase().trim();
+
+    // Direct questions are the strongest turn-take indicator
+    if (text.includes('?') || 
+        textLower.startsWith('what do you') || 
+        textLower.startsWith('how about') ||
+        textLower.startsWith('do you') ||
+        textLower.endsWith('right?')) {
+        return true;
+    }
+
+    // Imperatives or "Your turn" indicators
+    const turnTakePatterns = [
+        /\b(your turn|what's your take|tell me|you go|go ahead|listening|thoughts\?)\b/i,
+        /\b(do you agree|don't you think|is that okay|make sense\?)\b/i,
+        /\b(how are you|how about you|and you\?)\b/i
+    ];
+
+    return turnTakePatterns.some(pattern => pattern.test(textLower));
+};
+
 export const shouldGenerateSuggestion = (text) => {
     if (!text) return false;
     const clean = text.toLowerCase().trim().replace(/[?.!,]/g, '');

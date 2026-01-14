@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { detectIntent, shouldGenerateSuggestion, getPrecomputedSuggestion } from './core/intentEngine';
+import { detectIntent, shouldGenerateSuggestion, getPrecomputedSuggestion, detectTurnTake } from './core/intentEngine';
 import { AppConfig, BRIDGE_PHRASES } from './core/config';
 import { useSocialBattery } from './hooks/useSocialBattery';
 import { useTranscript } from './hooks/useTranscript';
@@ -18,9 +18,12 @@ export const useML = (initialState = null) => {
         sensitivity, setSensitivity, isPaused, togglePause, recharge, isExhausted, lastDrain
     } = useSocialBattery();
     const {
-        transcript, addEntry, currentSpeaker, toggleSpeaker, clearTranscript,
+        transcript, addEntry, currentSpeaker, setCurrentSpeaker, toggleSpeaker, clearTranscript,
         shouldPulse, nudgeSpeaker, consecutiveCount, setTranscript
     } = useTranscript();
+
+    // Track if a suggestion was recently shown to help with auto-speaker detection
+    const lastSuggestionTimeRef = useRef(0);
 
     // Initialize with initial state if provided (for loading sessions)
     useEffect(() => {
@@ -149,6 +152,14 @@ export const useML = (initialState = null) => {
     ]));
 
     const processText = useCallback((text) => {
+        // Auto-Speaker Detection (80/20: Predictive Diarization)
+        // If a suggestion was recently shown and new text arrives, it's highly likely the user is responding.
+        const timeSinceLastSuggestion = Date.now() - lastSuggestionTimeRef.current;
+        if (currentSpeaker === 'them' && timeSinceLastSuggestion < 15000 && timeSinceLastSuggestion > 500) {
+            // Auto-toggle to 'me' if it seems like a response to the AI's cue
+            toggleSpeaker();
+        }
+
         // First, check for fast lookup responses for common phrases
         const normalizedText = text.toLowerCase().trim();
         const fastLookupResult = fastLookupMap.current.get(normalizedText);
@@ -159,6 +170,7 @@ export const useML = (initialState = null) => {
             intent = fastLookupResult.intent;
             needsSuggestion = true;
             setSuggestion(fastLookupResult.suggestion);
+            lastSuggestionTimeRef.current = Date.now();
             setIsProcessing(false);
         } else {
             // Fall back to normal processing
@@ -177,6 +189,7 @@ export const useML = (initialState = null) => {
             const precomputed = getPrecomputedSuggestion(text);
             if (precomputed) {
                 setSuggestion(precomputed.suggestion);
+                lastSuggestionTimeRef.current = Date.now();
                 setIsProcessing(false);
             }
         }
@@ -184,6 +197,14 @@ export const useML = (initialState = null) => {
         const currentBattery = deduct(text, intent, persona);
         addEntry(text, currentSpeaker, intent);
         nudgeSpeaker();
+
+        // Predictive turn-taking for the NEXT segment
+        if (detectTurnTake(text)) {
+            // If they asked a question or invited a response, prepare for toggle
+            setTimeout(() => {
+                nudgeSpeaker(); // Pulse to indicate we suspect a speaker change
+            }, 500);
+        }
 
         const speakerLabel = currentSpeaker === 'me' ? 'Me' : 'Them';
         messagesRef.current.push({ role: 'user', content: `${speakerLabel}: ${text}` });
@@ -197,7 +218,7 @@ export const useML = (initialState = null) => {
 
         if (!shouldShowSuggestion || currentSpeaker === 'me') {
             setIsProcessing(false);
-            setSuggestion('');
+            if (currentSpeaker === 'me') setSuggestion('');
             return;
         }
 
@@ -213,6 +234,7 @@ export const useML = (initialState = null) => {
 
         if (cachedSuggestion && Date.now() - cachedSuggestion.timestamp < 45000) { // Extended cache to 45s
             setSuggestion(cachedSuggestion.text);
+            lastSuggestionTimeRef.current = Date.now();
             setIsProcessing(false);
             return;
         }
@@ -257,7 +279,8 @@ export const useML = (initialState = null) => {
                 }
             });
         }
-    }, [persona, deduct, addEntry, currentSpeaker]);
+    }, [persona, deduct, addEntry, currentSpeaker, toggleSpeaker, nudgeSpeaker, suggestion, isProcessing]);
+
 
     // Handle LLM results and cache them
     const handleLlmResult = useCallback((sug, taskId) => {
@@ -298,6 +321,7 @@ export const useML = (initialState = null) => {
         }
 
         setSuggestion(sug);
+        lastSuggestionTimeRef.current = Date.now();
         setIsProcessing(false);
     }, [detectedIntent, persona, battery]);
 
