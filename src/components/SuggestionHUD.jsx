@@ -13,7 +13,26 @@ const INTENT_UI = {
 
 const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, isExhausted }) => {
     const [copied, setCopied] = useState(null);
+    const [shouldPulse, setShouldPulse] = React.useState(false);
     const ui = INTENT_UI[intent] || INTENT_UI.general;
+
+    React.useEffect(() => {
+        if (suggestion && !isProcessing) {
+            setShouldPulse(true);
+            const timer = setTimeout(() => setShouldPulse(false), 1500);
+            
+            // Haptic feedback for mobile devices
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                try {
+                    navigator.vibrate(50);
+                } catch (e) {
+                    // Ignore vibration errors
+                }
+            }
+            
+            return () => clearTimeout(timer);
+        }
+    }, [suggestion, isProcessing]);
 
     const handleQuickAction = (text, index) => {
         if (!navigator.clipboard) {
@@ -33,7 +52,7 @@ const SuggestionHUD = ({ suggestion, intent, onDismiss, isProcessing, battery, i
         : (QUICK_ACTIONS[intent] || QUICK_ACTIONS.social);
 
     return (
-        <div className={`suggestion-hud ${isExhausted ? 'exhausted' : ''}`}>
+        <div className={`suggestion-hud ${isExhausted ? 'exhausted' : ''} ${shouldPulse ? 'should-pulse' : ''}`}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '8px' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <div className="intent-badge" style={{ backgroundColor: ui.color, marginBottom: 0 }}>

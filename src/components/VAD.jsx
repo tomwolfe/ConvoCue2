@@ -14,7 +14,16 @@ const VAD = ({ onSpeechEnd, isReady, status, progressiveReadiness }) => {
     const vad = useMicVAD({
         startOnLoad: false,
         onSpeechEnd: (audio) => {
-            onSpeechEnd(new Float32Array(audio));
+            const float32Array = new Float32Array(audio);
+            
+            // Calculate RMS volume for speaker guessing
+            let sum = 0;
+            for (let i = 0; i < float32Array.length; i++) {
+                sum += float32Array[i] * float32Array[i];
+            }
+            const rms = Math.sqrt(sum / float32Array.length);
+            
+            onSpeechEnd(float32Array, { rms });
         },
         onError: (err) => {
             console.error('VAD Error:', err);

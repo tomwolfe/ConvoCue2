@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { detectIntent, shouldGenerateSuggestion, getPrecomputedSuggestion } from './core/intentEngine';
-import { AppConfig, BRIDGE_PHRASES } from './core/config';
+import { AppConfig, BRIDGE_PHRASES, SILENCE_BREAKERS } from './core/config';
 import { useSocialBattery } from './hooks/useSocialBattery';
 import { useTranscript } from './hooks/useTranscript';
 
@@ -18,9 +18,14 @@ export const useML = (initialState = null) => {
         sensitivity, setSensitivity, isPaused, togglePause, recharge, isExhausted, lastDrain
     } = useSocialBattery();
     const {
-        transcript, addEntry, currentSpeaker, toggleSpeaker, clearTranscript,
+        transcript, addEntry, currentSpeaker, toggleSpeaker: baseToggleSpeaker, clearTranscript,
         shouldPulse, nudgeSpeaker, consecutiveCount, setTranscript
     } = useTranscript();
+
+    const toggleSpeaker = useCallback(() => {
+        manualTogglesRef.current += 1;
+        baseToggleSpeaker();
+    }, [baseToggleSpeaker]);
 
     // Initialize with initial state if provided (for loading sessions)
     useEffect(() => {
@@ -54,8 +59,40 @@ export const useML = (initialState = null) => {
     const [sttStage, setSttStage] = useState('initializing');
     const [llmStage, setLlmStage] = useState('initializing');
 
+    const lastActivityRef = useRef(Date.now());
+    const userVolumeRef = useRef(0.15); // Default expected volume for 'me'
+    const themVolumeRef = useRef(0.05); // Default expected volume for 'them'
+    const manualTogglesRef = useRef(0);
+    const silenceTriggeredRef = useRef(false);
+
     const audioBufferRef = useRef([]);
     const flushTimeoutRef = useRef(null);
+
+    // Monitor silence and provide "Silence Breakers"
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (!isReady || isPaused || isProcessing) return;
+
+            const silenceDuration = Date.now() - lastActivityRef.current;
+            
+            // If silence > 8 seconds and we haven't triggered a silence breaker yet
+            if (silenceDuration > 8000 && !silenceTriggeredRef.current && transcript.length > 0) {
+                silenceTriggeredRef.current = true;
+                
+                // Deduct a small amount for the tension of silence
+                deduct("...", "general", persona);
+                
+                // Get persona-specific silence breakers
+                const breakers = SILENCE_BREAKERS[persona] || SILENCE_BREAKERS.anxiety;
+                const randomBreaker = breakers[Math.floor(Math.random() * breakers.length)];
+                
+                setSuggestion(`[Silence Breaker] ${randomBreaker}`);
+                setDetectedIntent('social');
+            }
+        }, 2000);
+
+        return () => clearInterval(interval);
+    }, [isReady, isPaused, isProcessing, transcript.length, persona, deduct]);
 
     const flushAudioBuffer = useCallback(() => {
         if (audioBufferRef.current.length === 0) return;
@@ -149,6 +186,10 @@ export const useML = (initialState = null) => {
     ]));
 
     const processText = useCallback((text) => {
+        // Reset silence detection
+        lastActivityRef.current = Date.now();
+        silenceTriggeredRef.current = false;
+
         // First, check for fast lookup responses for common phrases
         const normalizedText = text.toLowerCase().trim();
         const fastLookupResult = fastLookupMap.current.get(normalizedText);
@@ -491,8 +532,43 @@ export const useML = (initialState = null) => {
     const progress = (sttProgress + llmProgress) / 2;
     const status = !isReady ? getDetailedModelLoadStatus() : isProcessing ? 'Processing...' : 'Ready';
 
-    const processAudio = useCallback((audioData) => {
+    const processAudio = useCallback((audioData, metadata) => {
         if (!sttReady || !sttWorkerRef.current) return;
+
+        // Reset silence detection on any speech
+        lastActivityRef.current = Date.now();
+        silenceTriggeredRef.current = false;
+
+        // Auto-speaker guessing based on volume (RMS)
+        if (metadata && metadata.rms) {
+            const { rms } = metadata;
+            
+            // Heuristic: If volume is closer to userVolumeRef than themVolumeRef, it's probably 'me'
+            // We only do this if the user hasn't manually toggled much recently, 
+            // or we use it as a "suggestion" to switch.
+            const distMe = Math.abs(rms - userVolumeRef.current);
+            const distThem = Math.abs(rms - themVolumeRef.current);
+            
+            const guessedSpeaker = distMe < distThem ? 'me' : 'them';
+            
+            if (guessedSpeaker !== currentSpeaker) {
+                // We don't force switch, but we can nudge or auto-switch if confidence is high
+                // For now, let's auto-switch to reduce friction (80/20 principle)
+                if (manualTogglesRef.current < 3 || Math.random() < 0.3) {
+                     // toggleSpeaker is a callback from useTranscript, we might need to expose setCurrentSpeaker
+                     // Actually let's just use the toggle logic if it's different
+                     if (guessedSpeaker === 'me' && currentSpeaker === 'them') toggleSpeaker();
+                     if (guessedSpeaker === 'them' && currentSpeaker === 'me') toggleSpeaker();
+                }
+            }
+            
+            // Slowly adapt thresholds
+            if (currentSpeaker === 'me') {
+                userVolumeRef.current = userVolumeRef.current * 0.9 + rms * 0.1;
+            } else {
+                themVolumeRef.current = themVolumeRef.current * 0.9 + rms * 0.1;
+            }
+        }
 
         audioBufferRef.current.push(audioData);
 
@@ -505,7 +581,7 @@ export const useML = (initialState = null) => {
         } else {
             flushTimeoutRef.current = setTimeout(flushAudioBuffer, 300);
         }
-    }, [sttReady, flushAudioBuffer]);
+    }, [sttReady, flushAudioBuffer, currentSpeaker, toggleSpeaker]);
 
     useEffect(() => {
         return () => {

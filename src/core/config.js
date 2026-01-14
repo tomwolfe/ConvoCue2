@@ -177,3 +177,26 @@ export const QUICK_ACTIONS = {
         { label: "Raincheck", text: "I'm feeling a bit drained right now. Can we continue this conversation another time?" }
     ]
 };
+
+export const SILENCE_BREAKERS = {
+    anxiety: [
+        "It's okay to take a moment. Maybe ask: 'What have you been up to lately?'",
+        "Silence is natural. Try: 'I was just thinking about what you said earlier...'",
+        "Low pressure: 'So, any big plans for the rest of the week?'"
+    ],
+    professional: [
+        "Awkward pause? Pivot: 'To circle back to our main objective...'",
+        "Driving the meeting: 'While we have a moment, should we discuss the timeline?'",
+        "Engagement check: 'I'd love to hear your thoughts on the next steps.'"
+    ],
+    relationship: [
+        "Deepen the moment: 'I'm really enjoying this quiet moment with you.'",
+        "Reflective: 'That last point really made me think. How are you feeling about it?'",
+        "Connection: 'Is there anything else on your mind that you'd like to share?'"
+    ],
+    crosscultural: [
+        "Diplomatic bridge: 'In my experience, this can be complex. What's your perspective?'",
+        "Clarifying: 'I want to make sure I've understood everything correctly so far.'",
+        "Social harmony: 'It's nice to just share this space. Have you tried the coffee here?'"
+    ]
+};
