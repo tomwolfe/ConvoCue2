@@ -10,6 +10,8 @@ export const useSocialBattery = () => {
     const batteryRef = useRef(battery);
     const lastInteractionRef = useRef(Date.now());
     const drainTimeoutRef = useRef(null);
+    const positiveStreakRef = useRef(0);
+    const recoverySurgeRef = useRef({ active: false, endTime: 0 });
 
     useEffect(() => {
         batteryRef.current = battery;
@@ -22,6 +24,12 @@ export const useSocialBattery = () => {
             const now = Date.now();
             const idleTime = (now - lastInteractionRef.current) / 1000;
 
+            // Check if recovery surge is active
+            const isSurgeActive = recoverySurgeRef.current.active && now < recoverySurgeRef.current.endTime;
+            if (recoverySurgeRef.current.active && now >= recoverySurgeRef.current.endTime) {
+                recoverySurgeRef.current.active = false;
+            }
+
             // Different recovery rates based on how long user has been idle
             let recoveryRate = 0;
             if (idleTime > 45) {
@@ -32,13 +40,18 @@ export const useSocialBattery = () => {
                 recoveryRate = 0.2; // Slower recovery for shorter breaks
             }
 
+            // Apply surge multiplier if active
+            if (isSurgeActive) {
+                recoveryRate = recoveryRate > 0 ? recoveryRate * 2 : 0.2; // Even small surge during non-idle
+            }
+
             if (recoveryRate > 0) {
                 setBattery(prev => {
                     const newVal = Math.min(100, prev + recoveryRate);
                     if (newVal > prev) {
                         setLastDrain({
                             amount: `+${recoveryRate.toFixed(1)}`,
-                            reason: 'recovery'
+                            reason: isSurgeActive ? 'recovery surge' : 'recovery'
                         });
                         setTimeout(() => setLastDrain(null), 3000);
                     }
@@ -55,6 +68,20 @@ export const useSocialBattery = () => {
         const now = Date.now();
         const timeSinceLast = (now - lastInteractionRef.current) / 1000;
         lastInteractionRef.current = now;
+
+        // Update positive streak for recovery surge
+        if (intent === 'positive') {
+            positiveStreakRef.current += 1;
+            if (positiveStreakRef.current >= 3) {
+                recoverySurgeRef.current = {
+                    active: true,
+                    endTime: now + 60000 // 60 seconds from now
+                };
+                positiveStreakRef.current = 0; // Reset after triggering
+            }
+        } else {
+            positiveStreakRef.current = 0;
+        }
 
         const wordCount = text.trim().split(/\s+/).length;
 

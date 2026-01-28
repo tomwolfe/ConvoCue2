@@ -23,6 +23,28 @@ const SessionSummary = ({ summary, transcript, battery, initialBattery, onNewSes
         }).filter(p => p !== null);
     };
 
+    const generateSocialChallenge = (stats) => {
+        const myTalkRatio = stats.myMessages / (stats.totalMessages || 1);
+        
+        if (stats.totalMessages < 5) {
+            return "Try to stay in the conversation longer next time. Aim for at least 10 exchanges.";
+        }
+        
+        if (myTalkRatio > 0.7) {
+            return "You dominated this session. Next time, try to ask 3 follow-up questions to balance the floor.";
+        }
+        
+        if (myTalkRatio < 0.3) {
+            return "You were a bit quiet. Challenge yourself to share 2 personal anecdotes or opinions next time.";
+        }
+        
+        if (stats.drain > 40) {
+            return "This was taxing! Next time, try using one of the 'Exit Strategy' suggestions when you hit 30% drain.";
+        }
+        
+        return "Great balance! For the next session, try to identify the other person's primary intent earlier.";
+    };
+
     return (
         <div className="session-summary-overlay">
             <div className="session-summary-modal">
@@ -61,9 +83,19 @@ const SessionSummary = ({ summary, transcript, battery, initialBattery, onNewSes
                             </button>
                         </div>
                     ) : summary ? (
-                        <div className="summary-text">
-                            {formatSummary(summary)}
-                        </div>
+                        <>
+                            <div className="summary-text">
+                                {formatSummary(summary)}
+                            </div>
+                            
+                            <div className="social-challenge-section">
+                                <h3>Next Session Challenge</h3>
+                                <div className="challenge-card">
+                                    <Zap size={18} className="challenge-icon" />
+                                    <p>{generateSocialChallenge(stats)}</p>
+                                </div>
+                            </div>
+                        </>
                     ) : (
                         <div className="summary-loading">
                             <RefreshCw className="animate-spin" />
