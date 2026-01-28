@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import InsightsDashboard from '../InsightsDashboard';
+import InsightsDashboard from '../components/InsightsDashboard';
 
 // Mock the recharts components since they're not available in test environment
-jest.mock('recharts', () => ({
+vi.mock('recharts', () => ({
   BarChart: ({ children }) => <div data-testid="barchart">{children}</div>,
   Bar: ({ children }) => <div data-testid="bar">{children}</div>,
   XAxis: () => <div data-testid="xaxis" />,

@@ -1,10 +1,10 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import EnhancedInsightsDashboard from './EnhancedInsightsDashboard';
+import EnhancedInsightsDashboard from '../components/EnhancedInsightsDashboard';
 
 // Mock the recharts components since they're not essential for unit tests
-jest.mock('recharts', () => ({
-  ...jest.requireActual('recharts'),
+vi.mock('recharts', () => ({
+  ...vi.importActual('recharts'),
   ResponsiveContainer: ({ children }) => <div>{children}</div>,
   BarChart: ({ children }) => <div>{children}</div>,
   PieChart: ({ children }) => <div>{children}</div>,

@@ -131,7 +131,8 @@ self.onmessage = async (event) => {
 
                 // Enhanced prompt with more specific contextual cues
                 const recentIntentsStr = context.recentIntents ? ` Recent intents: ${context.recentIntents}.` : '';
-                const systemPrompt = `Role:${context.persona}. Intent:${context.intent}.${recentIntentsStr} Battery:${context.battery}%. Goal:${instruction}. Context: Provide a relevant, concise suggestion based on the conversation history.`;
+                const memoryStr = context.shortTermMemory ? ` Memory: ${context.shortTermMemory}.` : '';
+                const systemPrompt = `Role:${context.persona}. Intent:${context.intent}.${recentIntentsStr}${memoryStr} Battery:${context.battery}%. Goal:${instruction}. Context: Provide a relevant, concise suggestion based on the conversation history.`;
 
                 // Enhanced prompt with more specific instructions and context
                 const fullPrompt = `\`\`system\n${systemPrompt}\nRules:

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { useSessionHistory } from './hooks/useSessionHistory';
+import { useSessionHistory } from '../hooks/useSessionHistory';
 
 // Mock localStorage
 const mockLocalStorage = (() => {
@@ -63,14 +63,14 @@ describe('useSessionHistory', () => {
   });
 
   test('initializes with empty sessions', () => {
-    const onSessionsChange = jest.fn();
+    const onSessionsChange = vi.fn();
     render(<TestComponent onSessionsChange={onSessionsChange} />);
     
     expect(onSessionsChange).toHaveBeenCalledWith([]);
   });
 
   test('saves a session correctly', async () => {
-    const onSessionsChange = jest.fn();
+    const onSessionsChange = vi.fn();
     render(<TestComponent onSessionsChange={onSessionsChange} />);
     
     fireEvent.click(screen.getByText('Save Session'));
@@ -94,7 +94,7 @@ describe('useSessionHistory', () => {
   });
 
   test('gets session statistics', () => {
-    const onSessionsChange = jest.fn();
+    const onSessionsChange = vi.fn();
     const { unmount } = render(<TestComponent onSessionsChange={onSessionsChange} />);
     
     fireEvent.click(screen.getByText('Save Session'));
